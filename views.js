@@ -40,7 +40,7 @@ var UI = (function () {
     }, { rootMargin: "400px" });
 
     sentinelObserver = new IntersectionObserver(function (entries) {
-      if (entries[0].isIntersecting) loadGridPage();
+      if (entries[0].isIntersecting && viewState && !viewState.done) loadGridPage();
     }, { rootMargin: "600px" });
     sentinelObserver.observe(sentinel);
   }
@@ -712,19 +712,23 @@ var UI = (function () {
     });
     Player.onChange(renderServers);
 
-    API.details(type, id).then(function (data) {
-      setPageTitle(shortTitle(data));
-      document.getElementById("watchTitle").textContent = shortTitle(data);
-      var meta = [
-        '<span class="title-rating"><i class="fas fa-star"></i> ' + ratingText(data.vote_average) + '</span>',
-        shortYear(data),
-        type === "tv" ? "TV Show" : "Movie"
-      ];
-      if (type === "tv") {
-        watchMetaBase = meta.map(function (m) { return m ? "<span>" + esc(m) + "</span>" : ""; }).join("");
-        meta.push("Season " + watchState.s + " · Episode " + watchState.e);
-      }
-      document.getElementById("watchMeta").innerHTML = meta.map(function (m) { return m ? "<span>" + esc(m) + "</span>" : ""; }).join("");
+API.details(type, id).then(function (data) {
+        setPageTitle(shortTitle(data));
+        document.getElementById("watchTitle").textContent = shortTitle(data);
+        var ratingHtml = '<span class="title-rating"><i class="fas fa-star"></i> ' + ratingText(data.vote_average) + '</span>';
+        var meta = [
+          ratingHtml,
+          shortYear(data),
+          type === "tv" ? "TV Show" : "Movie"
+        ];
+        if (type === "tv") {
+          watchMetaBase = '<span>' + ratingHtml + '</span>' + (shortYear(data) ? '<span>' + esc(shortYear(data)) + '</span>' : '') + '<span>' + esc(type === "tv" ? "TV Show" : "Movie") + '</span>';
+          meta.push("Season " + watchState.s + " · Episode " + watchState.e);
+        }
+        document.getElementById("watchMeta").innerHTML = meta.map(function (m, i) {
+          if (i === 0) return "<span>" + m + "</span>";
+          return m ? "<span>" + esc(m) + "</span>" : "";
+        }).join("");
       if (type === "tv") {
         var seasons = (data.seasons || []).filter(function (x) { return x.season_number > 0; });
         if (seasons.length) {
