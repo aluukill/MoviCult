@@ -14,14 +14,41 @@ var API = (function () {
   }
 
   function poster(p, size) {
-    if (!p)
-      return "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+    if (!p) return "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
     return CONFIG.imageBase + "/" + (size || CONFIG.posterWidth) + p;
   }
 
   function backdrop(p) {
     if (!p) return null;
     return CONFIG.imageBase + "/" + CONFIG.backdropWidth + p;
+  }
+
+  function profile(p) {
+    if (!p) return null;
+    return CONFIG.imageBase + "/w185" + p;
+  }
+
+  function still(p) {
+    if (!p) return null;
+    return CONFIG.imageBase + "/w300" + p;
+  }
+
+  function genreMap(list) {
+    var map = {};
+    (list || []).forEach(function (g) {
+      map[g.id] = g.name;
+    });
+    return map;
+  }
+
+  function genreNames(ids, map) {
+    return (ids || []).map(function (id) {
+      return map[id];
+    }).filter(Boolean).slice(0, 5);
+  }
+
+  function genres(mediaType) {
+    return fetchJson("/genre/" + mediaType + "/list");
   }
 
   function trending(mediaType, page) {
@@ -41,17 +68,39 @@ var API = (function () {
   }
 
   function details(mediaType, id) {
-    return fetchJson("/" + mediaType + "/" + id);
+    return fetchJson("/" + mediaType + "/" + id, {
+      append_to_response: "videos,credits"
+    });
+  }
+
+  function similar(mediaType, id, page) {
+    return fetchJson("/" + mediaType + "/" + id + "/similar", { page: page || 1 });
+  }
+
+  function collection(id, page) {
+    return fetchJson("/collection/" + id, { page: page || 1 });
+  }
+
+  function seasonEpisodes(mediaType, id, season) {
+    return fetchJson("/" + mediaType + "/" + id + "/season/" + season);
   }
 
   return {
     fetchJson: fetchJson,
     poster: poster,
     backdrop: backdrop,
+    profile: profile,
+    still: still,
+    genreMap: genreMap,
+    genreNames: genreNames,
+    genres: genres,
     trending: trending,
     popular: popular,
     topRated: topRated,
     searchMulti: searchMulti,
     details: details,
+    similar: similar,
+    collection: collection,
+    seasonEpisodes: seasonEpisodes
   };
 })();

@@ -1,12 +1,11 @@
 (function () {
   var searchInput = document.getElementById("searchInput");
   var searchClear = document.getElementById("searchClear");
-  var searchTimer = null;
-  var lastQuery = "";
+  var hamburger = document.getElementById("hamburger");
+  var mobileNav = document.getElementById("mobileNav");
   var cache = {};
 
   function routeKey(route) {
-    if (route.name === "home") return "home";
     if (route.name === "movies") return "movies";
     if (route.name === "series") return "series";
     if (route.name === "search") return "search:" + route.query;
@@ -18,15 +17,17 @@
     if (parts.length === 0) return { name: "home" };
     if (parts[0] === "movies") return { name: "movies" };
     if (parts[0] === "series") return { name: "series" };
-    if (parts[0] === "search" && parts[1])
+    if (parts[0] === "search" && parts[1]) return { name: "search", query: decodeURIComponent(parts.slice(1).join("/")) };
+    if (parts[0] === "title" && parts[1] && parts[2]) return { name: "title", type: parts[1], id: parts[2] };
+    if (parts[0] === "watch" && parts[1] && parts[2]) {
       return {
-        name: "search",
-        query: decodeURIComponent(parts.slice(1).join("/")),
+        name: "watch",
+        type: parts[1],
+        id: parts[2],
+        season: parts[3] ? parseInt(parts[3], 10) : 1,
+        episode: parts[4] ? parseInt(parts[4], 10) : 1
       };
-    if (parts[0] === "movie" && parts[1])
-      return { name: "watch", type: "movie", id: parts[1] };
-    if (parts[0] === "tv" && parts[1])
-      return { name: "watch", type: "tv", id: parts[1] };
+    }
     return { name: "home" };
   }
 
@@ -39,79 +40,79 @@
 
   function setActive(route) {
     var active = navName(route);
-    document.querySelectorAll(".nav-link").forEach(function (b) {
+    document.querySelectorAll(".nav-link, .mobile-link").forEach(function (b) {
       b.classList.toggle("is-active", b.dataset.view === active);
     });
   }
 
-  function syncSearch(value) {
-    searchInput.value = value || "";
-    searchClear.classList.toggle("is-visible", (value || "").length > 0);
-    lastQuery = value || "";
+  function setMenu(open) {
+    hamburger.classList.toggle("is-open", open);
+    hamburger.setAttribute("aria-expanded", String(open));
+    hamburger.setAttribute("aria-label", open ? "Close menu" : "Open menu");
+    mobileNav.classList.toggle("is-open", open);
   }
 
   function render(route) {
+    UI.closeSearch();
+    setMenu(false);
     Player.stop();
+    UI.teardown();
     setActive(route);
     var key = routeKey(route);
-    var cached =
-      key &&
-      cache[key] &&
-      !(
-        route.name === "home" && cache[key].html.indexOf('class="hero"') === -1
-      );
-    if (cached) {
+    if (key && cache[key]) {
       UI.restoreView(cache[key]);
     } else {
       if (route.name === "home") {
         UI.renderHome();
       } else if (route.name === "movies") {
-        UI.openGrid("movies", "Movies", "movie", function (p) {
-          return API.popular("movie", p);
-        });
+        UI.openGrid("movies", "Movies", "movie", function (p) { return API.popular("movie", p); }, "Browse popular movies from around the world.");
       } else if (route.name === "series") {
-        UI.openGrid("series", "TV Shows", "tv", function (p) {
-          return API.popular("tv", p);
-        });
+        UI.openGrid("series", "TV Shows", "tv", function (p) { return API.popular("tv", p); }, "Browse popular TV shows and series.");
       } else if (route.name === "search") {
         UI.renderSearch(route.query);
+      } else if (route.name === "title") {
+        UI.renderTitle(route.type, route.id);
       } else if (route.name === "watch") {
-        UI.renderWatch(route.type, route.id);
+        UI.renderWatch(route.type, route.id, route.season, route.episode);
       }
       if (key) cache[key] = UI.captureView();
     }
-    syncSearch(route.name === "search" ? route.query : "");
+    if (route.name === "search") {
+      searchInput.value = route.query;
+      searchClear.classList.add("is-visible");
+    } else {
+      searchInput.value = "";
+      searchClear.classList.remove("is-visible");
+    }
     window.scrollTo(0, 0);
+    viewRoot.focus({ preventScroll: true });
   }
 
-  searchInput.addEventListener("input", function () {
-    var q = searchInput.value;
-    searchClear.classList.toggle("is-visible", q.length > 0);
-    clearTimeout(searchTimer);
-    searchTimer = setTimeout(function () {
-      var trimmed = q.trim();
-      if (trimmed && trimmed !== lastQuery) {
-        lastQuery = trimmed;
-        if (location.hash !== "#/search/" + encodeURIComponent(trimmed)) {
-          location.hash = "#/search/" + encodeURIComponent(trimmed);
-        }
-      }
-    }, 450);
+  hamburger.addEventListener("click", function () {
+    setMenu(!mobileNav.classList.contains("is-open"));
   });
 
-  searchClear.addEventListener("click", function () {
-    syncSearch("");
-    location.hash = "#/";
-    searchInput.focus();
+  document.addEventListener("click", function (ev) {
+    if (!mobileNav.classList.contains("is-open")) return;
+    if (!mobileNav.contains(ev.target) && !hamburger.contains(ev.target)) setMenu(false);
   });
 
-  document.querySelectorAll(".nav-link").forEach(function (btn) {
+  document.addEventListener("keydown", function (ev) {
+    if (ev.key === "Escape") {
+      if (mobileNav.classList.contains("is-open")) setMenu(false);
+      UI.closeSearch();
+    }
+  });
+
+  document.querySelectorAll(".nav-link, .mobile-link").forEach(function (btn) {
     btn.addEventListener("click", function () {
+      setMenu(false);
       location.hash = "#/" + btn.dataset.view;
     });
   });
 
   document.getElementById("brandButton").addEventListener("click", function () {
+    setMenu(false);
     location.hash = "#/";
   });
 
@@ -120,5 +121,6 @@
     render(parseHash());
   });
 
+  UI.initSearch();
   render(parseHash());
 })();

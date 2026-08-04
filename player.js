@@ -1,31 +1,37 @@
 var Player = (function () {
-  var providerIndex = 0;
-  var reachable = [];
-  var currentType = null;
-  var currentId = null;
-  var currentSeason = null;
-  var currentEpisode = null;
-  var timer = null;
+  var type = null;
+  var id = null;
+  var season = null;
+  var episode = null;
+  var providers = [];
+  var index = -1;
   var frame = null;
-  var statusEl = null;
-  var label = null;
-  var container = null;
+  var wrap = null;
+  var timer = null;
+  var onChange = null;
+  var onStatus = null;
 
-  function buildUrls(type, id, s, e) {
-    var list = CONFIG.providers[type === "tv" ? "tv" : "movie"];
+  function setStatus(msg, isError) {
+    if (onStatus) onStatus(msg, isError);
+  }
+
+  function stopWait() {
+    if (timer) {
+      clearTimeout(timer);
+      timer = null;
+    }
+  }
+
+  function buildUrls(t, id2, s, e) {
+    var list = CONFIG.providers[t === "tv" ? "tv" : "movie"];
     return list.map(function (p) {
-      return {
-        name: p.name,
-        url: type === "tv" ? p.build(id, s, e) : p.build(id),
-      };
+      return { name: p.name, url: t === "tv" ? p.build(id2, s, e) : p.build(id2) };
     });
   }
 
   function check(url) {
     var ctrl = new AbortController();
-    var t = setTimeout(function () {
-      ctrl.abort();
-    }, CONFIG.providerCheckTimeout);
+    var t = setTimeout(function () { ctrl.abort(); }, CONFIG.providerCheckTimeout);
     return fetch(url, { mode: "no-cors", signal: ctrl.signal })
       .then(function () {
         clearTimeout(t);
@@ -37,141 +43,134 @@ var Player = (function () {
       });
   }
 
-  function setStatus(msg) {
-    if (statusEl) statusEl.textContent = msg;
+  function build() {
+    var el = document.getElementById("player");
+    if (!el) return;
+    el.innerHTML =
+      '<div class="player-frame-wrap">' +
+        '<iframe class="player-frame" id="playerFrame" allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowfullscreen title="Video player" referrerpolicy="origin"></iframe>' +
+        '<div class="player-spinner"><i class="fas fa-spinner fa-spin"></i><span>Loading video...</span></div>' +
+      '</div>';
+    frame = el.querySelector("#playerFrame");
+    wrap = el.querySelector(".player-frame-wrap");
   }
 
-  function stopWait() {
-    if (timer) {
-      clearTimeout(timer);
-      timer = null;
-    }
-  }
-
-  function tryProvider() {
-    if (!frame || providerIndex >= reachable.length) return;
+  function attempt(i) {
+    if (!frame || i < 0 || i >= providers.length) return;
     stopWait();
-    var entry = reachable[providerIndex];
-    providerIndex += 1;
-    setStatus("Loading from " + entry.name + "...");
-    frame.src = entry.url;
-    if (label) label.textContent = entry.name;
+    index = i;
+    var p = providers[i];
+    wrap.classList.remove("has-frame");
+    if (onChange) onChange(index);
+    setStatus("Loading from " + p.name + "...");
+    frame.src = p.url;
     var claimed = false;
     timer = setTimeout(function () {
-      if (!claimed) {
-        claimNext(
-          "Server " + entry.name + " did not respond. Trying another...",
-        );
-      }
+      if (!claimed) next(p);
     }, CONFIG.providerLoadTimeout);
     frame.onload = function () {
       if (!claimed) {
         claimed = true;
         stopWait();
         setStatus("");
-        container.classList.add("has-frame");
-        if (label) label.classList.remove("is-switching");
+        wrap.classList.add("has-frame");
+        if (onChange) onChange(index);
       }
     };
-    function claimNext(msg) {
-      if (claimed) return;
-      claimed = true;
-      stopWait();
-      if (providerIndex < reachable.length) {
-        setStatus(msg);
-        tryProvider();
-      } else {
-        setStatus("All servers are unavailable right now.");
-        UI.toast("No server could load this title. Please try again later.");
-      }
-    }
     frame.onerror = function () {
-      claimNext("Server " + entry.name + " failed. Trying another...");
+      if (!claimed) {
+        claimed = true;
+        stopWait();
+        next(p);
+      }
     };
   }
 
-  function load(type, id, s, e) {
-    currentType = type;
-    currentId = id;
-    currentSeason = s;
-    currentEpisode = e;
-    providerIndex = 0;
-    reachable = [];
-    container = document.getElementById("player");
-    if (!container) return;
-    container.hidden = false;
-    container.innerHTML =
-      '<div class="player-bar">' +
-      '<span class="player-status" id="playerStatus">Checking servers...</span>' +
-      '<div class="player-server">' +
-      "<span>Server</span>" +
-      '<span class="player-server-name" id="serverName">-</span>' +
-      '<button class="btn btn-small" id="switchServer" title="Switch server"><i class="fas fa-repeat"></i> Switch</button>' +
-      "</div>" +
-      "</div>" +
-      '<div class="player-frame-wrap">' +
-      '<iframe class="player-frame" id="playerFrame" allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowfullscreen title="Video player"></iframe>' +
-      '<div class="player-spinner" id="playerSpinner"><i class="fas fa-spinner fa-spin"></i><span>Contacting servers...</span></div>' +
-      "</div>";
-    frame = document.getElementById("playerFrame");
-    statusEl = document.getElementById("playerStatus");
-    label = document.getElementById("serverName");
-    document
-      .getElementById("switchServer")
-      .addEventListener("click", function () {
-        if (providerIndex < reachable.length) {
-          setStatus("Switching server...");
-          label.classList.add("is-switching");
-          tryProvider();
-        } else {
-          setStatus("No more servers to try.");
-        }
-      });
-
-    var urls = buildUrls(type, id, s, e);
-    setStatus("Checking server availability...");
-    Promise.all(
-      urls.map(function (u) {
-        return check(u.url).then(function (ok) {
-          return ok ? u : null;
-        });
-      }),
-    ).then(function (results) {
-      reachable = results.filter(Boolean);
-      if (reachable.length === 0) {
-        setStatus("Rechecking servers...");
-        reachable = urls;
+  function next(p) {
+    var n = -1;
+    for (var k = index + 1; k < providers.length; k++) {
+      if (providers[k].reachable) {
+        n = k;
+        break;
       }
-      tryProvider();
+    }
+    if (n !== -1) {
+      setStatus(p.name + " unavailable. Trying " + providers[n].name + "...");
+      attempt(n);
+    } else {
+      setStatus("No server could load this title. Please try again later.", true);
+      if (onChange) onChange(index);
+    }
+  }
+
+  function load(t, id2, s, e) {
+    stopWait();
+    type = t;
+    id = id2;
+    season = s;
+    episode = e;
+    providers = buildUrls(t, id2, s, e);
+    index = -1;
+    build();
+    setStatus("Checking servers...");
+    Promise.all(
+      providers.map(function (p) {
+        return check(p.url).then(function (ok) {
+          p.reachable = ok;
+        });
+      })
+    ).then(function () {
+      var start = 0;
+      for (var k = 0; k < providers.length; k++) {
+        if (providers[k].reachable) {
+          start = k;
+          break;
+        }
+      }
+      if (onChange) onChange(-1);
+      attempt(start);
     });
   }
 
-  function setEpisode(s, e) {
-    currentSeason = s;
-    currentEpisode = e;
-    if (container && !container.hidden) {
-      load(currentType, currentId, s, e);
+  function switchTo(i) {
+    if (i >= 0 && i < providers.length && providers[i].reachable) {
+      attempt(i);
     }
+  }
+
+  function setEpisode(s, e) {
+    season = s;
+    episode = e;
+    if (frame) load(type, id, s, e);
   }
 
   function stop() {
     stopWait();
     if (frame) frame.src = "about:blank";
-    if (container) {
-      container.hidden = true;
-      container.innerHTML = "";
-    }
+    var el = document.getElementById("player");
+    if (el) el.innerHTML = "";
     frame = null;
-    container = null;
-    statusEl = null;
-    label = null;
-    providerIndex = 0;
-    reachable = [];
+    wrap = null;
+    providers = [];
+    index = -1;
   }
 
   return {
     load: load,
+    switchTo: switchTo,
     setEpisode: setEpisode,
     stop: stop,
+    onChange: function (fn) {
+      onChange = fn;
+    },
+    onStatus: function (fn) {
+      onStatus = fn;
+    },
+    providers: function () {
+      return providers;
+    },
+    currentIndex: function () {
+      return index;
+    }
   };
 })();

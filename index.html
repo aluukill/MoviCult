@@ -3,14 +3,42 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MoviCult — Stream Movies &amp; TV Shows Online</title>
     <meta
       name="description"
-      content="MoviCult - Stream movies and TV shows with reliable multi-provider playback."
+      content="Watch the latest movies and TV shows online at MoviCult. Browse trending titles, trailers, cast details, and stream with reliable multi-server playback."
     />
-    <title>MoviCult</title>
+    <meta name="robots" content="index, follow" />
+    <meta name="theme-color" content="#0f1521" />
+    <link rel="canonical" href="https://movicult.vercel.app/" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="MoviCult" />
+    <meta property="og:title" content="MoviCult — Stream Movies &amp; TV Shows Online" />
+    <meta
+      property="og:description"
+      content="Browse trending movies and TV shows, watch trailers, and stream online with reliable multi-server playback."
+    />
+    <meta property="og:url" content="https://movicult.vercel.app/" />
+    <meta property="og:image" content="https://movicult.vercel.app/logo.png" />
+    <meta property="og:locale" content="en_US" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="MoviCult — Stream Movies &amp; TV Shows Online" />
+    <meta
+      name="twitter:description"
+      content="Browse trending movies and TV shows, watch trailers, and stream online with reliable multi-server playback."
+    />
+    <meta name="twitter:image" content="https://movicult.vercel.app/logo.png" />
+
     <link rel="icon" type="image/png" href="logo.png" />
+    <link rel="apple-touch-icon" href="logo.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://api.themoviedb.org" />
+    <link rel="preconnect" href="https://image.tmdb.org" />
+    <link rel="dns-prefetch" href="https://api.themoviedb.org" />
+    <link rel="dns-prefetch" href="https://image.tmdb.org" />
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
       rel="stylesheet"
@@ -20,23 +48,51 @@
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
     />
     <link rel="stylesheet" href="styles.css" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "MoviCult",
+        "alternateName": "MoviCult Streaming",
+        "url": "https://movicult.vercel.app/",
+        "description": "MoviCult is a movie and TV show streaming website with trending titles, trailers, and reliable multi-server playback.",
+        "inLanguage": "en",
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": {
+            "@type": "EntryPoint",
+            "urlTemplate": "https://movicult.vercel.app/#/search/{search_term_string}"
+          },
+          "query-input": "required name=search_term_string"
+        }
+      }
+    </script>
   </head>
   <body>
+    <a class="skip-link" href="#viewRoot">Skip to content</a>
+
     <header class="site-header">
       <div class="header-inner">
         <button class="brand" id="brandButton" aria-label="MoviCult home">
-          <img class="brand-logo" src="logo.png" alt="MoviCult logo" />
+          <img
+            class="brand-logo"
+            src="logo.png"
+            alt="MoviCult logo"
+            width="40"
+            height="40"
+          />
           <span class="brand-name">MoviCult</span>
         </button>
 
-        <nav class="site-nav" id="siteNav">
+        <nav class="site-nav" id="siteNav" aria-label="Primary">
           <button class="nav-link is-active" data-view="home">Home</button>
           <button class="nav-link" data-view="movies">Movies</button>
           <button class="nav-link" data-view="series">TV Shows</button>
         </nav>
 
-        <div class="search-wrap">
-          <i class="fas fa-magnifying-glass search-icon"></i>
+        <div class="search-wrap" id="searchWrap">
+          <i class="fas fa-magnifying-glass search-icon" aria-hidden="true"></i>
           <input
             type="search"
             id="searchInput"
@@ -44,23 +100,41 @@
             placeholder="Search movies & TV..."
             autocomplete="off"
             spellcheck="false"
+            aria-label="Search movies and TV shows"
+            aria-expanded="false"
+            aria-controls="searchPanel"
           />
-          <button
-            class="search-clear"
-            id="searchClear"
-            aria-label="Clear search"
-          >
-            <i class="fas fa-xmark"></i>
+          <button class="search-clear" id="searchClear" aria-label="Clear search" hidden>
+            <i class="fas fa-xmark" aria-hidden="true"></i>
           </button>
+          <div class="search-panel" id="searchPanel" role="listbox" hidden></div>
         </div>
+
+        <button
+          class="hamburger"
+          id="hamburger"
+          aria-label="Open menu"
+          aria-expanded="false"
+          aria-controls="mobileNav"
+        >
+          <span class="hamburger-bar" aria-hidden="true"></span>
+          <span class="hamburger-bar" aria-hidden="true"></span>
+          <span class="hamburger-bar" aria-hidden="true"></span>
+        </button>
       </div>
+
+      <nav class="mobile-nav" id="mobileNav" aria-label="Mobile">
+        <button class="mobile-link is-active" data-view="home">Home</button>
+        <button class="mobile-link" data-view="movies">Movies</button>
+        <button class="mobile-link" data-view="series">TV Shows</button>
+      </nav>
     </header>
 
-    <main id="viewRoot" class="view-root"></main>
+    <main id="viewRoot" class="view-root" tabindex="-1"></main>
 
     <div id="scrollSentinel" class="scroll-sentinel"></div>
 
-    <div class="toast" id="toast" hidden></div>
+    <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
     <script src="config.js"></script>
     <script src="api.js"></script>
