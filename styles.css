@@ -340,13 +340,14 @@ input {
   max-height: 0;
   overflow: hidden;
   border-bottom: 1px solid transparent;
+  background: var(--bg);
   transition:
     max-height 0.35s var(--ease),
     border-bottom-color 0.35s var(--ease);
 }
 
 .mobile-nav.is-open {
-  max-height: 240px;
+  max-height: 300px;
   border-bottom-color: var(--border);
 }
 
