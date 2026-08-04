@@ -109,6 +109,15 @@ var UI = (function () {
       if (entries[0].isIntersecting && viewState && !viewState.done && !viewState.loading) loadGridPage();
     }, { rootMargin: "600px" });
     sentinelObserver.observe(sentinel);
+
+    window.addEventListener("scroll", function () {
+      var scrollY = window.scrollY || window.pageYOffset;
+      var clientHeight = document.documentElement.clientHeight;
+      var scrollHeight = document.documentElement.scrollHeight;
+      if (scrollY + clientHeight >= scrollHeight - 400) {
+        if (viewState && !viewState.done && !viewState.loading) loadGridPage();
+      }
+    }, { passive: true });
   }
 
   function setPageTitle(title) {

@@ -958,7 +958,8 @@ input {
 }
 
 .scroll-sentinel {
-  height: 2px;
+  height: 1px;
+  width: 100%;
 }
 
 .title-hero {
