@@ -1229,26 +1229,44 @@ input {
 .watch-episodes-col {
   width: 360px;
   flex: 0 0 360px;
+  display: flex;
+  flex-direction: column;
   position: sticky;
   top: 70px;
   max-height: calc(100vh - 90px);
-  overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: var(--border) transparent;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--bg);
+  overflow: hidden;
 }
 
-.watch-episodes-col::-webkit-scrollbar {
+.watch-episodes-col .episodes-header {
+  flex-shrink: 0;
+  margin-bottom: 0;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  background: var(--surface);
+}
+
+.watch-episodes-col .episode-list-wrap {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 8px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.watch-episodes-col .episode-list-wrap::-webkit-scrollbar {
   width: 4px;
 }
 
-.watch-episodes-col::-webkit-scrollbar-track {
+.watch-episodes-col .episode-list-wrap::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.watch-episodes-col::-webkit-scrollbar-thumb {
+.watch-episodes-col .episode-list-wrap::-webkit-scrollbar-thumb {
   background: var(--border);
   border-radius: 4px;
 }

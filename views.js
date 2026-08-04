@@ -459,7 +459,8 @@ var UI = (function () {
   function loadRowPage(key) {
     var row = rows[key];
     if (!row || row.loading || row.done) return;
-    if (!row.started) {
+    var firstLoad = !row.started;
+    if (firstLoad) {
       row.started = true;
       row.track.innerHTML = "";
       row.track.appendChild(skeletons(CONFIG.pageSize));
@@ -470,7 +471,7 @@ var UI = (function () {
       row.loading = false;
       row.page = page;
       row.done = !data.results || data.results.length === 0;
-      if (row.started) row.track.innerHTML = "";
+      if (firstLoad) row.track.innerHTML = "";
       row.started = true;
       var frag = document.createDocumentFragment();
       (data.results || []).forEach(function (item) {
