@@ -15,8 +15,16 @@
   function parseHash() {
     var parts = location.hash.replace(/^#\/?/, "").split("/").filter(Boolean);
     if (parts.length === 0) return { name: "home" };
-    if (parts[0] === "movies") return { name: "movies" };
-    if (parts[0] === "series") return { name: "series" };
+    if (parts[0] === "movies") {
+      if (parts[1] === "trending") return { name: "movies-trending" };
+      if (parts[1] === "top-rated") return { name: "movies-top-rated" };
+      return { name: "movies" };
+    }
+    if (parts[0] === "series") {
+      if (parts[1] === "trending") return { name: "series-trending" };
+      if (parts[1] === "top-rated") return { name: "series-top-rated" };
+      return { name: "series" };
+    }
     if (parts[0] === "watchlist") return { name: "watchlist" };
     if (parts[0] === "history") return { name: "history" };
     if (parts[0] === "search" && parts[1]) return { name: "search", query: decodeURIComponent(parts.slice(1).join("/")) };
@@ -35,8 +43,8 @@
 
   function navName(route) {
     if (route.name === "home") return "home";
-    if (route.name === "movies") return "movies";
-    if (route.name === "series") return "series";
+    if (route.name === "movies" || route.name === "movies-trending" || route.name === "movies-top-rated") return "movies";
+    if (route.name === "series" || route.name === "series-trending" || route.name === "series-top-rated") return "series";
     if (route.name === "watchlist") return "watchlist";
     if (route.name === "history") return "history";
     return "";
@@ -70,8 +78,16 @@
         UI.renderHome();
       } else if (route.name === "movies") {
         UI.openGrid("movies", "Movies", "movie", function (p) { return API.popular("movie", p); }, "Browse popular movies from around the world.");
+      } else if (route.name === "movies-trending") {
+        UI.openGrid("movies-trending", "Trending Movies", "movie", function (p) { return API.trending("movie", p); }, "Trending movies this week.");
+      } else if (route.name === "movies-top-rated") {
+        UI.openGrid("movies-top-rated", "Top Rated Movies", "movie", function (p) { return API.topRated("movie", p); }, "Highest rated movies of all time.");
       } else if (route.name === "series") {
         UI.openGrid("series", "TV Shows", "tv", function (p) { return API.popular("tv", p); }, "Browse popular TV shows and series.");
+      } else if (route.name === "series-trending") {
+        UI.openGrid("series-trending", "Trending TV Shows", "tv", function (p) { return API.trending("tv", p); }, "Trending TV shows this week.");
+      } else if (route.name === "series-top-rated") {
+        UI.openGrid("series-top-rated", "Top Rated TV Shows", "tv", function (p) { return API.topRated("tv", p); }, "Highest rated TV shows of all time.");
       } else if (route.name === "watchlist") {
         UI.renderWatchlist();
       } else if (route.name === "history") {

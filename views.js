@@ -391,23 +391,49 @@ var UI = (function () {
       heroSlot.innerHTML = "";
     });
 
-    var defs = [
-      { key: "trending-movies", label: "Trending Movies", type: "movie", source: function (p) { return API.trending("movie", p); } },
-      { key: "top-movies", label: "Top Rated Movies", type: "movie", source: function (p) { return API.topRated("movie", p); } },
-      { key: "trending-tv", label: "Trending TV Shows", type: "tv", source: function (p) { return API.trending("tv", p); } },
-      { key: "top-tv", label: "Top Rated TV Shows", type: "tv", source: function (p) { return API.topRated("tv", p); } }
+    var staticDefs = [
+      { label: "Trending Movies", type: "movie", source: function (p) { return API.trending("movie", p); }, link: "#/movies/trending" },
+      { label: "Top Rated Movies", type: "movie", source: function (p) { return API.topRated("movie", p); }, link: "#/movies/top-rated" },
+      { label: "Trending TV Shows", type: "tv", source: function (p) { return API.trending("tv", p); }, link: "#/series/trending" },
+      { label: "Top Rated TV Shows", type: "tv", source: function (p) { return API.topRated("tv", p); }, link: "#/series/top-rated" }
     ];
-    defs.forEach(function (def) {
-      var sec = makeSection(def.key, def.label);
-      var track = sec.querySelector(".row-track");
-      rows[def.key] = { key: def.key, label: def.label, type: def.type, source: def.source, page: 0, done: false, loading: false, started: false, track: track };
-      rowOrder.push(def.key);
+    staticDefs.forEach(function (def) {
+      var sec = makeStaticSection(def.label, def.source, def.type, def.link);
       viewRoot.appendChild(sec);
-      track.addEventListener("scroll", handleRowScroll(def.key, track), { passive: true });
     });
+
+    var popularSec = makeSection("popular-all", "All Time Popular");
+    var popularTrack = popularSec.querySelector(".row-track");
+    rows["popular-all"] = { key: "popular-all", label: "All Time Popular", type: null, source: function (p) { return API.trending("all", p); }, page: 0, done: false, loading: false, started: false, track: popularTrack };
+    rowOrder.push("popular-all");
+    viewRoot.appendChild(popularSec);
+    popularTrack.addEventListener("scroll", handleRowScroll("popular-all", popularTrack), { passive: true });
   }
 
-  function makeSection(key, label) {
+  function makeStaticSection(label, source, type, link) {
+    var sec = document.createElement("section");
+    sec.className = "row-section";
+    sec.innerHTML =
+      '<div class="row-head">' +
+        '<h2 class="row-title">' + label + '</h2>' +
+        '<a class="btn btn-ghost btn-small" href="' + link + '">View More <i class="fas fa-arrow-right"></i></a>' +
+      '</div>' +
+      '<div class="row-track"></div>';
+    var track = sec.querySelector(".row-track");
+    track.appendChild(skeletons(10));
+    source(1).then(function (data) {
+      track.innerHTML = "";
+      var frag = document.createDocumentFragment();
+      (data.results || []).forEach(function (item) {
+        frag.appendChild(card(item, type));
+      });
+      track.appendChild(frag);
+      registerLazy(track);
+    }).catch(function () {
+      track.innerHTML = "";
+    });
+    return sec;
+  }
     var sec = document.createElement("section");
     sec.className = "row-section";
     sec.dataset.rowKey = key;
