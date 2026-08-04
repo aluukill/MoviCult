@@ -791,7 +791,7 @@ input {
 
 .row-track {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   gap: 16px;
 }
 
@@ -1218,6 +1218,7 @@ input {
   gap: 20px;
   max-width: 1400px;
   margin: 0 auto;
+  align-items: flex-start;
 }
 
 .watch-player-col {
@@ -1228,33 +1229,26 @@ input {
 .watch-episodes-col {
   width: 360px;
   flex: 0 0 360px;
-  display: flex;
-  flex-direction: column;
-}
-
-.watch-episodes-col .episodes-header {
   position: sticky;
-  top: 0;
-  z-index: 5;
-  flex-shrink: 0;
-}
-
-.watch-episodes-col .episode-list-wrap {
-  flex: 1;
+  top: 70px;
+  max-height: calc(100vh - 90px);
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: var(--border) transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
 }
 
-.watch-episodes-col .episode-list-wrap::-webkit-scrollbar {
+.watch-episodes-col::-webkit-scrollbar {
   width: 4px;
 }
 
-.watch-episodes-col .episode-list-wrap::-webkit-scrollbar-track {
+.watch-episodes-col::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.watch-episodes-col .episode-list-wrap::-webkit-scrollbar-thumb {
+.watch-episodes-col::-webkit-scrollbar-thumb {
   background: var(--border);
   border-radius: 4px;
 }
@@ -1698,6 +1692,7 @@ input {
 
   .row-track {
     gap: 8px;
+    grid-template-columns: repeat(3, 1fr);
   }
 
   .row-track .card {

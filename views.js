@@ -116,6 +116,13 @@ var UI = (function () {
       var scrollHeight = document.documentElement.scrollHeight;
       if (scrollY + clientHeight >= scrollHeight - 400) {
         if (viewState && !viewState.done && !viewState.loading) loadGridPage();
+        rowOrder.forEach(function (key) {
+          var row = rows[key];
+          if (row && !row.done && !row.loading && row.started) {
+            var rect = row.track.getBoundingClientRect();
+            if (rect.bottom <= window.innerHeight + 600) loadRowPage(key);
+          }
+        });
       }
     }, { passive: true });
   }
