@@ -4,6 +4,12 @@
   var hamburger = document.getElementById("hamburger");
   var mobileNav = document.getElementById("mobileNav");
   var cache = {};
+  var scrollPositions = {};
+  var lastHash = location.hash;
+
+  window.addEventListener("scroll", function () {
+    scrollPositions[lastHash] = window.scrollY || window.pageYOffset;
+  }, { passive: true });
 
   function routeKey(route) {
     if (route.name === "movies") return "movies";
@@ -73,6 +79,8 @@
     var key = routeKey(route);
     if (key && cache[key]) {
       UI.restoreView(cache[key]);
+      var saved = scrollPositions[location.hash] || 0;
+      requestAnimationFrame(function () { window.scrollTo(0, saved); });
     } else {
       if (route.name === "home") {
         UI.renderHome();
@@ -108,8 +116,11 @@
       searchInput.value = "";
       searchClear.classList.remove("is-visible");
     }
-    window.scrollTo(0, 0);
+    if (!key || !cache[key]) {
+      window.scrollTo(0, 0);
+    }
     viewRoot.focus({ preventScroll: true });
+    lastHash = location.hash;
   }
 
   hamburger.addEventListener("click", function () {

@@ -408,6 +408,7 @@ var UI = (function () {
     rowOrder.push("popular-all");
     viewRoot.appendChild(popularSec);
     popularTrack.addEventListener("scroll", handleRowScroll("popular-all", popularTrack), { passive: true });
+    loadRowPage("popular-all");
   }
 
   function makeStaticSection(label, source, type, link) {
@@ -590,6 +591,7 @@ var UI = (function () {
       '<div class="page-head">' +
         '<h1 class="page-title">Watch History</h1>' +
         '<div class="page-sub">' + list.length + ' title' + (list.length !== 1 ? 's' : '') + ' watched</div>' +
+        (list.length ? '<button class="btn btn-ghost btn-small" id="clearHistoryBtn"><i class="fas fa-trash"></i> Clear History</button>' : '') +
       '</div>' +
       '<div class="grid" data-grid></div>';
     var grid = viewRoot.querySelector("[data-grid]");
@@ -603,6 +605,14 @@ var UI = (function () {
     });
     grid.appendChild(frag);
     registerLazy(grid);
+    var clearBtn = document.getElementById("clearHistoryBtn");
+    if (clearBtn) {
+      clearBtn.addEventListener("click", function () {
+        saveHistory([]);
+        UI.toast("History cleared");
+        UI.renderHistory();
+      });
+    }
   }
 
   function watchlistCard(item) {
@@ -936,15 +946,17 @@ var UI = (function () {
     watchState = { s: s || 1, e: e || 1 };
     viewRoot.innerHTML =
       '<div class="watch-top">' + BACK + '</div>' +
-      '<div class="watch-main">' +
-        '<h1 class="watch-title" id="watchTitle">Loading...</h1>' +
-        '<div class="watch-meta" id="watchMeta"></div>' +
-        '<div class="player" id="player">' +
-          '<div class="player-frame-wrap"><div class="player-spinner"><i class="fas fa-spinner fa-spin"></i><span>Loading video...</span></div></div>' +
+      '<div class="watch-layout">' +
+        '<div class="watch-player-col">' +
+          '<h1 class="watch-title" id="watchTitle">Loading...</h1>' +
+          '<div class="watch-meta" id="watchMeta"></div>' +
+          '<div class="player" id="player">' +
+            '<div class="player-frame-wrap"><div class="player-spinner"><i class="fas fa-spinner fa-spin"></i><span>Loading video...</span></div></div>' +
+          '</div>' +
+          '<div class="status-line" id="statusLine"><i class="fas fa-circle-info"></i><span id="statusText">Loading video...</span></div>' +
+          '<section class="servers" id="serversSection"></section>' +
         '</div>' +
-        '<div class="status-line" id="statusLine"><i class="fas fa-circle-info"></i><span id="statusText">Loading video...</span></div>' +
-        '<section class="servers" id="serversSection"></section>' +
-        '<section class="detail-section" id="episodesSection"></section>' +
+        '<div class="watch-episodes-col" id="episodesSection"></div>' +
       '</div>';
     bindBack();
 
@@ -996,9 +1008,11 @@ API.details(type, id).then(function (data) {
   function buildEpisodesSection(type, id, seasons) {
     var sec = document.getElementById("episodesSection");
     sec.innerHTML =
-      '<h2 class="section-title">Episodes</h2>' +
-      '<div class="seasons-row"><span class="seasons-label">Season</span><div id="seasonDropdown"></div></div>' +
-      '<div class="episode-grid" id="episodeGrid"></div>';
+      '<div class="episodes-header">' +
+        '<span class="seasons-label">Episodes</span>' +
+        '<div id="seasonDropdown"></div>' +
+      '</div>' +
+      '<div class="episode-list" id="episodeGrid"></div>';
     var dropdown = createDropdown({
       label: "Season",
       options: seasons.map(function (x) { return { value: x.season_number, label: "Season " + x.season_number }; }),
@@ -1017,7 +1031,7 @@ API.details(type, id).then(function (data) {
     var grid = document.getElementById("episodeGrid");
     if (!grid) return;
     grid.innerHTML = "";
-    for (var i = 0; i < 6; i++) grid.appendChild(episodeSkeleton());
+    for (var i = 0; i < 4; i++) grid.appendChild(episodeSkeleton());
     if (episodeCache[s]) {
       renderEpisodes(s, episodeCache[s]);
       return;
