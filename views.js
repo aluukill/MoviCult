@@ -434,6 +434,8 @@ var UI = (function () {
     });
     return sec;
   }
+
+  function makeSection(key, label) {
     var sec = document.createElement("section");
     sec.className = "row-section";
     sec.dataset.rowKey = key;
