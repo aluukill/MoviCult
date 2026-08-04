@@ -482,7 +482,8 @@ var UI = (function () {
     return function () {
       var row = rows[key];
       if (row && row.done) return;
-      if (track.scrollLeft + track.clientWidth >= track.scrollWidth - 400) {
+      var rect = track.getBoundingClientRect();
+      if (rect.bottom <= window.innerHeight + 400) {
         loadRowPage(key);
       }
     };
@@ -1008,11 +1009,11 @@ API.details(type, id).then(function (data) {
   function buildEpisodesSection(type, id, seasons) {
     var sec = document.getElementById("episodesSection");
     sec.innerHTML =
-      '<div class="episodes-header">' +
+      '<div class="episodes-header" id="episodesHeader">' +
         '<span class="seasons-label">Episodes</span>' +
         '<div id="seasonDropdown"></div>' +
       '</div>' +
-      '<div class="episode-list" id="episodeGrid"></div>';
+      '<div class="episode-list-wrap" id="episodeGrid"></div>';
     var dropdown = createDropdown({
       label: "Season",
       options: seasons.map(function (x) { return { value: x.season_number, label: "Season " + x.season_number }; }),
