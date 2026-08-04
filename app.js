@@ -17,6 +17,8 @@
     if (parts.length === 0) return { name: "home" };
     if (parts[0] === "movies") return { name: "movies" };
     if (parts[0] === "series") return { name: "series" };
+    if (parts[0] === "watchlist") return { name: "watchlist" };
+    if (parts[0] === "history") return { name: "history" };
     if (parts[0] === "search" && parts[1]) return { name: "search", query: decodeURIComponent(parts.slice(1).join("/")) };
     if (parts[0] === "title" && parts[1] && parts[2]) return { name: "title", type: parts[1], id: parts[2] };
     if (parts[0] === "watch" && parts[1] && parts[2]) {
@@ -35,6 +37,8 @@
     if (route.name === "home") return "home";
     if (route.name === "movies") return "movies";
     if (route.name === "series") return "series";
+    if (route.name === "watchlist") return "watchlist";
+    if (route.name === "history") return "history";
     return "";
   }
 
@@ -68,6 +72,10 @@
         UI.openGrid("movies", "Movies", "movie", function (p) { return API.popular("movie", p); }, "Browse popular movies from around the world.");
       } else if (route.name === "series") {
         UI.openGrid("series", "TV Shows", "tv", function (p) { return API.popular("tv", p); }, "Browse popular TV shows and series.");
+      } else if (route.name === "watchlist") {
+        UI.renderWatchlist();
+      } else if (route.name === "history") {
+        UI.renderHistory();
       } else if (route.name === "search") {
         UI.renderSearch(route.query);
       } else if (route.name === "title") {

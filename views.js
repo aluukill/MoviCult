@@ -18,6 +18,72 @@ var UI = (function () {
   var BACK = '<button class="btn btn-ghost back-btn" id="backBtn"><i class="fas fa-chevron-left"></i> Back</button>';
   var SLIDE_INTERVAL = 5000;
 
+  var STORAGE_KEYS = {
+    watchlist: "movicult_watchlist",
+    history: "movicult_history"
+  };
+
+  function getWatchlist() {
+    try {
+      return JSON.parse(localStorage.getItem(STORAGE_KEYS.watchlist) || "[]");
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function saveWatchlist(list) {
+    localStorage.setItem(STORAGE_KEYS.watchlist, JSON.stringify(list));
+  }
+
+  function getHistory() {
+    try {
+      return JSON.parse(localStorage.getItem(STORAGE_KEYS.history) || "[]");
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function saveHistory(list) {
+    localStorage.setItem(STORAGE_KEYS.history, JSON.stringify(list));
+  }
+
+  function isInWatchlist(type, id) {
+    var list = getWatchlist();
+    return list.some(function (item) { return item.type === type && item.id === id; });
+  }
+
+  function toggleWatchlist(type, id, title, poster) {
+    var list = getWatchlist();
+    var idx = list.findIndex(function (item) { return item.type === type && item.id === id; });
+    if (idx >= 0) {
+      list.splice(idx, 1);
+      saveWatchlist(list);
+      return false;
+    } else {
+      list.unshift({ type: type, id: id, title: title, poster: poster, addedAt: Date.now() });
+      saveWatchlist(list);
+      return true;
+    }
+  }
+
+  function addToHistory(type, id, title, poster, season, episode) {
+    var list = getHistory();
+    var key = type + ":" + id + (season ? ":" + season + ":" + episode : "");
+    list = list.filter(function (item) { return item.key !== key; });
+    list.unshift({
+      key: key,
+      type: type,
+      id: id,
+      title: title,
+      poster: poster,
+      season: season || null,
+      episode: episode || null,
+      watchedAt: Date.now()
+    });
+    if (list.length > 50) list = list.slice(0, 50);
+    saveHistory(list);
+  }
+
   function init() {
     lazyObserver = new IntersectionObserver(function (entries) {
       entries.forEach(function (entry) {
@@ -40,7 +106,7 @@ var UI = (function () {
     }, { rootMargin: "400px" });
 
     sentinelObserver = new IntersectionObserver(function (entries) {
-      if (entries[0].isIntersecting && viewState && !viewState.done) loadGridPage();
+      if (entries[0].isIntersecting && viewState && !viewState.done && !viewState.loading) loadGridPage();
     }, { rootMargin: "600px" });
     sentinelObserver.observe(sentinel);
   }
@@ -375,6 +441,8 @@ var UI = (function () {
 
   function handleRowScroll(key, track) {
     return function () {
+      var row = rows[key];
+      if (row && row.done) return;
       if (track.scrollLeft + track.clientWidth >= track.scrollWidth - 400) {
         loadRowPage(key);
       }
@@ -451,6 +519,132 @@ var UI = (function () {
       loading: false
     };
     loadGridPage(grid);
+  }
+
+  function renderWatchlist() {
+    teardown();
+    setPageTitle("Watchlist");
+    var list = getWatchlist();
+    viewRoot.innerHTML =
+      '<div class="page-head">' +
+        '<h1 class="page-title">Watchlist</h1>' +
+        '<div class="page-sub">' + list.length + ' title' + (list.length !== 1 ? 's' : '') + ' saved</div>' +
+      '</div>' +
+      '<div class="grid" data-grid></div>';
+    var grid = viewRoot.querySelector("[data-grid]");
+    if (!list.length) {
+      grid.appendChild(emptyState("Your watchlist is empty. Add titles from their detail pages."));
+      return;
+    }
+    var frag = document.createDocumentFragment();
+    list.forEach(function (item) {
+      frag.appendChild(watchlistCard(item));
+    });
+    grid.appendChild(frag);
+    registerLazy(grid);
+  }
+
+  function renderHistory() {
+    teardown();
+    setPageTitle("History");
+    var list = getHistory();
+    viewRoot.innerHTML =
+      '<div class="page-head">' +
+        '<h1 class="page-title">Watch History</h1>' +
+        '<div class="page-sub">' + list.length + ' title' + (list.length !== 1 ? 's' : '') + ' watched</div>' +
+      '</div>' +
+      '<div class="grid" data-grid></div>';
+    var grid = viewRoot.querySelector("[data-grid]");
+    if (!list.length) {
+      grid.appendChild(emptyState("No watch history yet. Start watching to build your history."));
+      return;
+    }
+    var frag = document.createDocumentFragment();
+    list.forEach(function (item) {
+      frag.appendChild(historyCard(item));
+    });
+    grid.appendChild(frag);
+    registerLazy(grid);
+  }
+
+  function watchlistCard(item) {
+    var el = document.createElement("div");
+    el.className = "card";
+    el.dataset.type = item.type;
+    el.dataset.id = item.id;
+    el.tabIndex = 0;
+    el.setAttribute("role", "button");
+    var posterUrl = item.poster ? API.poster(item.poster) : "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+    el.innerHTML =
+      '<div class="card-media">' +
+        '<img class="card-img" data-src="' + posterUrl + '" alt="' + esc(item.title) + '" loading="lazy">' +
+        '<div class="card-shade"></div>' +
+        '<span class="card-play"><i class="fas fa-play"></i></span>' +
+        '<span class="card-type">' + (item.type === "tv" ? "TV" : "Movie") + '</span>' +
+      '</div>' +
+      '<div class="card-body">' +
+        '<h3 class="card-title">' + esc(item.title) + '</h3>' +
+        '<div class="card-sub"><button class="btn btn-ghost btn-small remove-watchlist" data-type="' + item.type + '" data-id="' + item.id + '"><i class="fas fa-bookmark"></i> Remove</button></div>' +
+      '</div>';
+    el.addEventListener("click", function (ev) {
+      if (ev.target.closest(".remove-watchlist")) return;
+      location.hash = "#/title/" + item.type + "/" + item.id;
+    });
+    el.addEventListener("keydown", function (ev) {
+      if (ev.key === "Enter" || ev.key === " ") {
+        ev.preventDefault();
+        location.hash = "#/title/" + item.type + "/" + item.id;
+      }
+    });
+    el.querySelector(".remove-watchlist").addEventListener("click", function (ev) {
+      ev.stopPropagation();
+      toggleWatchlist(item.type, item.id);
+      UI.toast("Removed from watchlist");
+      UI.renderWatchlist();
+    });
+    return el;
+  }
+
+  function historyCard(item) {
+    var el = document.createElement("div");
+    el.className = "card";
+    el.dataset.type = item.type;
+    el.dataset.id = item.id;
+    el.tabIndex = 0;
+    el.setAttribute("role", "button");
+    var posterUrl = item.poster ? API.poster(item.poster) : "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+    var label = item.type === "tv" && item.season && item.episode
+      ? "Season " + item.season + " Episode " + item.episode
+      : (item.type === "tv" ? "TV" : "Movie");
+    el.innerHTML =
+      '<div class="card-media">' +
+        '<img class="card-img" data-src="' + posterUrl + '" alt="' + esc(item.title) + '" loading="lazy">' +
+        '<div class="card-shade"></div>' +
+        '<span class="card-play"><i class="fas fa-play"></i></span>' +
+        '<span class="card-type">' + label + '</span>' +
+      '</div>' +
+      '<div class="card-body">' +
+        '<h3 class="card-title">' + esc(item.title) + '</h3>' +
+        '<div class="card-sub"><span class="chip">' + new Date(item.watchedAt).toLocaleDateString() + '</span></div>' +
+      '</div>';
+    el.addEventListener("click", function () {
+      if (item.type === "tv" && item.season && item.episode) {
+        location.hash = "#/watch/" + item.type + "/" + item.id + "/" + item.season + "/" + item.episode;
+      } else {
+        location.hash = "#/title/" + item.type + "/" + item.id;
+      }
+    });
+    el.addEventListener("keydown", function (ev) {
+      if (ev.key === "Enter" || ev.key === " ") {
+        ev.preventDefault();
+        if (item.type === "tv" && item.season && item.episode) {
+          location.hash = "#/watch/" + item.type + "/" + item.id + "/" + item.season + "/" + item.episode;
+        } else {
+          location.hash = "#/title/" + item.type + "/" + item.id;
+        }
+      }
+    });
+    return el;
   }
 
   function emptyState(msg) {
@@ -549,6 +743,7 @@ var UI = (function () {
             '<div class="title-actions">' +
               '<button class="btn btn-primary" data-watch><i class="fas fa-play"></i> Watch Now</button>' +
               (trailerOf(data) ? '<button class="btn btn-ghost" data-trailer><i class="fas fa-circle-play"></i> Trailer</button>' : "") +
+              '<button class="btn btn-ghost" data-watchlist><i class="fas fa-bookmark"></i> <span class="watchlist-text">' + (isInWatchlist(type, id) ? "Remove from Watchlist" : "Add to Watchlist") + '</span></button>' +
             '</div>' +
           '</div>' +
         '</div>';
@@ -561,6 +756,17 @@ var UI = (function () {
         trailerBtn.addEventListener("click", function () {
           var tb = document.getElementById("trailerSection");
           if (tb) tb.scrollIntoView({ behavior: "smooth", block: "center" });
+        });
+      }
+
+      var watchlistBtn = hero.querySelector("[data-watchlist]");
+      if (watchlistBtn) {
+        watchlistBtn.addEventListener("click", function () {
+          var added = toggleWatchlist(type, id, shortTitle(data), data.poster_path);
+          var textEl = watchlistBtn.querySelector(".watchlist-text");
+          if (textEl) textEl.textContent = added ? "Remove from Watchlist" : "Add to Watchlist";
+          watchlistBtn.querySelector("i").className = added ? "fas fa-bookmark" : "fas fa-bookmark";
+          UI.toast(added ? "Added to watchlist" : "Removed from watchlist");
         });
       }
 
@@ -742,6 +948,7 @@ API.details(type, id).then(function (data) {
         document.getElementById("episodesSection").innerHTML = "";
       }
       Player.load(type, id, watchState.s, watchState.e);
+      addToHistory(type, id, shortTitle(data), data.poster_path, watchState.s, watchState.e);
     }).catch(function () {
       document.getElementById("watchTitle").textContent = "Title unavailable";
       Player.load(type === "tv" ? "tv" : "movie", id, watchState.s, watchState.e);
@@ -821,6 +1028,7 @@ API.details(type, id).then(function (data) {
       Player.setEpisode(s, ep.episode_number);
       gridActive();
       document.getElementById("watchMeta").innerHTML = watchMetaBase + '<span>Season ' + s + ' · Episode ' + ep.episode_number + '</span>';
+      addToHistory(type, id, shortTitle(data), data.poster_path, s, ep.episode_number);
     });
     return el;
   }
@@ -1162,6 +1370,8 @@ API.details(type, id).then(function (data) {
     renderSearch: renderSearch,
     renderTitle: renderTitle,
     renderWatch: renderWatch,
+    renderWatchlist: renderWatchlist,
+    renderHistory: renderHistory,
     captureView: captureView,
     restoreView: restoreView,
     teardown: teardown,
