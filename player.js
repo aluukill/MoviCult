@@ -25,13 +25,18 @@ var Player = (function () {
   function buildUrls(t, id2, s, e) {
     var list = CONFIG.providers[t === "tv" ? "tv" : "movie"];
     return list.map(function (p) {
-      return { name: p.name, url: t === "tv" ? p.build(id2, s, e) : p.build(id2) };
+      return {
+        name: p.name,
+        url: t === "tv" ? p.build(id2, s, e) : p.build(id2),
+      };
     });
   }
 
   function check(url) {
     var ctrl = new AbortController();
-    var t = setTimeout(function () { ctrl.abort(); }, CONFIG.providerCheckTimeout);
+    var t = setTimeout(function () {
+      ctrl.abort();
+    }, CONFIG.providerCheckTimeout);
     return fetch(url, { mode: "no-cors", signal: ctrl.signal })
       .then(function () {
         clearTimeout(t);
@@ -48,9 +53,9 @@ var Player = (function () {
     if (!el) return;
     el.innerHTML =
       '<div class="player-frame-wrap">' +
-        '<iframe class="player-frame" id="playerFrame" allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowfullscreen title="Video player" referrerpolicy="origin"></iframe>' +
-        '<div class="player-spinner"><i class="fas fa-spinner fa-spin"></i><span>Loading video...</span></div>' +
-      '</div>';
+      '<iframe class="player-frame" id="playerFrame" allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowfullscreen title="Video player" referrerpolicy="origin"></iframe>' +
+      '<div class="player-spinner"><i class="fas fa-spinner fa-spin"></i><span>Loading video...</span></div>' +
+      "</div>";
     frame = el.querySelector("#playerFrame");
     wrap = el.querySelector(".player-frame-wrap");
   }
@@ -98,7 +103,10 @@ var Player = (function () {
       setStatus(p.name + " unavailable. Trying " + providers[n].name + "...");
       attempt(n);
     } else {
-      setStatus("No server could load this title. Please try again later.", true);
+      setStatus(
+        "No server could load this title. Please try again later.",
+        true,
+      );
       if (onChange) onChange(index);
     }
   }
@@ -118,7 +126,7 @@ var Player = (function () {
         return check(p.url).then(function (ok) {
           p.reachable = ok;
         });
-      })
+      }),
     ).then(function () {
       var start = 0;
       for (var k = 0; k < providers.length; k++) {
@@ -171,6 +179,6 @@ var Player = (function () {
     },
     currentIndex: function () {
       return index;
-    }
+    },
   };
 })();

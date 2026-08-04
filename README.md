@@ -27,14 +27,14 @@ A modern, responsive movie and TV show streaming web application built with vani
 
 ## Tech Stack
 
-| Category | Technologies |
-|----------|-------------|
-| **Core** | Vanilla JavaScript (ES6+), HTML5, CSS3 |
-| **Styling** | CSS Custom Properties, Flexbox, CSS Grid, Inter font |
-| **Icons** | Font Awesome 6.5 |
-| **API** | [TMDB (The Movie Database)](https://www.themoviedb.org/documentation/api) |
-| **Streaming Providers** | 2embed, apiplayer, multiembed, vidsrc |
-| **Deployment** | Vercel / Netlify / GitHub Pages (static hosting) |
+| Category                | Technologies                                                              |
+| ----------------------- | ------------------------------------------------------------------------- |
+| **Core**                | Vanilla JavaScript (ES6+), HTML5, CSS3                                    |
+| **Styling**             | CSS Custom Properties, Flexbox, CSS Grid, Inter font                      |
+| **Icons**               | Font Awesome 6.5                                                          |
+| **API**                 | [TMDB (The Movie Database)](https://www.themoviedb.org/documentation/api) |
+| **Streaming Providers** | 2embed, apiplayer, multiembed, vidsrc                                     |
+| **Deployment**          | Vercel / Netlify / GitHub Pages (static hosting)                          |
 
 ## Quick Start
 
@@ -107,31 +107,31 @@ providers: {
 
 ### Timeouts
 
-| Constant | Default | Description |
-|----------|---------|-------------|
-| `providerCheckTimeout` | 6000ms | Max time to verify provider reachability |
-| `providerLoadTimeout` | 10000ms | Max time to wait for iframe load before fallback |
+| Constant               | Default | Description                                      |
+| ---------------------- | ------- | ------------------------------------------------ |
+| `providerCheckTimeout` | 6000ms  | Max time to verify provider reachability         |
+| `providerLoadTimeout`  | 10000ms | Max time to wait for iframe load before fallback |
 
 ## Routes
 
-| Route | Description |
-|-------|-------------|
-| `#/` | Home — Trending carousel + categorized rows |
-| `#/movies` | All movies grid (popular) |
-| `#/series` | All TV shows grid (popular) |
-| `#/search/{query}` | Search results |
-| `#/title/{type}/{id}` | Title details (cast, trailer, similar) |
-| `#/watch/{type}/{id}[/{season}/{episode}]` | Video player |
+| Route                                      | Description                                 |
+| ------------------------------------------ | ------------------------------------------- |
+| `#/`                                       | Home — Trending carousel + categorized rows |
+| `#/movies`                                 | All movies grid (popular)                   |
+| `#/series`                                 | All TV shows grid (popular)                 |
+| `#/search/{query}`                         | Search results                              |
+| `#/title/{type}/{id}`                      | Title details (cast, trailer, similar)      |
+| `#/watch/{type}/{id}[/{season}/{episode}]` | Video player                                |
 
 ## Keyboard Shortcuts
 
-| Key | Action |
-|-----|--------|
-| `Esc` | Close mobile menu / search panel |
-| `Tab` | Navigate focusable elements |
-| `Enter` / `Space` | Activate focused card/button |
-| `←` / `→` | Hero carousel navigation |
-| `↑` / `↓` | Search suggestions / dropdown navigation |
+| Key               | Action                                   |
+| ----------------- | ---------------------------------------- |
+| `Esc`             | Close mobile menu / search panel         |
+| `Tab`             | Navigate focusable elements              |
+| `Enter` / `Space` | Activate focused card/button             |
+| `←` / `→`         | Hero carousel navigation                 |
+| `↑` / `↓`         | Search suggestions / dropdown navigation |
 
 ## Security & Privacy
 

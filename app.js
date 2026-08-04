@@ -7,9 +7,13 @@
   var scrollPositions = {};
   var lastHash = location.hash;
 
-  window.addEventListener("scroll", function () {
-    scrollPositions[lastHash] = window.scrollY || window.pageYOffset;
-  }, { passive: true });
+  window.addEventListener(
+    "scroll",
+    function () {
+      scrollPositions[lastHash] = window.scrollY || window.pageYOffset;
+    },
+    { passive: true },
+  );
 
   function routeKey(route) {
     if (route.name === "movies") return "movies";
@@ -33,15 +37,20 @@
     }
     if (parts[0] === "watchlist") return { name: "watchlist" };
     if (parts[0] === "history") return { name: "history" };
-    if (parts[0] === "search" && parts[1]) return { name: "search", query: decodeURIComponent(parts.slice(1).join("/")) };
-    if (parts[0] === "title" && parts[1] && parts[2]) return { name: "title", type: parts[1], id: parts[2] };
+    if (parts[0] === "search" && parts[1])
+      return {
+        name: "search",
+        query: decodeURIComponent(parts.slice(1).join("/")),
+      };
+    if (parts[0] === "title" && parts[1] && parts[2])
+      return { name: "title", type: parts[1], id: parts[2] };
     if (parts[0] === "watch" && parts[1] && parts[2]) {
       return {
         name: "watch",
         type: parts[1],
         id: parts[2],
         season: parts[3] ? parseInt(parts[3], 10) : 1,
-        episode: parts[4] ? parseInt(parts[4], 10) : 1
+        episode: parts[4] ? parseInt(parts[4], 10) : 1,
       };
     }
     return { name: "home" };
@@ -49,8 +58,18 @@
 
   function navName(route) {
     if (route.name === "home") return "home";
-    if (route.name === "movies" || route.name === "movies-trending" || route.name === "movies-top-rated") return "movies";
-    if (route.name === "series" || route.name === "series-trending" || route.name === "series-top-rated") return "series";
+    if (
+      route.name === "movies" ||
+      route.name === "movies-trending" ||
+      route.name === "movies-top-rated"
+    )
+      return "movies";
+    if (
+      route.name === "series" ||
+      route.name === "series-trending" ||
+      route.name === "series-top-rated"
+    )
+      return "series";
     if (route.name === "watchlist") return "watchlist";
     if (route.name === "history") return "history";
     return "";
@@ -80,22 +99,72 @@
     if (key && cache[key]) {
       UI.restoreView(cache[key]);
       var saved = scrollPositions[location.hash] || 0;
-      requestAnimationFrame(function () { window.scrollTo(0, saved); });
+      requestAnimationFrame(function () {
+        window.scrollTo(0, saved);
+      });
     } else {
       if (route.name === "home") {
         UI.renderHome();
       } else if (route.name === "movies") {
-        UI.openGrid("movies", "Movies", "movie", function (p) { return API.popular("movie", p); }, "Browse popular movies from around the world.");
+        UI.openGrid(
+          "movies",
+          "Movies",
+          "movie",
+          function (p) {
+            return API.popular("movie", p);
+          },
+          "Browse popular movies from around the world.",
+        );
       } else if (route.name === "movies-trending") {
-        UI.openGrid("movies-trending", "Trending Movies", "movie", function (p) { return API.trending("movie", p); }, "Trending movies this week.");
+        UI.openGrid(
+          "movies-trending",
+          "Trending Movies",
+          "movie",
+          function (p) {
+            return API.trending("movie", p);
+          },
+          "Trending movies this week.",
+        );
       } else if (route.name === "movies-top-rated") {
-        UI.openGrid("movies-top-rated", "Top Rated Movies", "movie", function (p) { return API.topRated("movie", p); }, "Highest rated movies of all time.");
+        UI.openGrid(
+          "movies-top-rated",
+          "Top Rated Movies",
+          "movie",
+          function (p) {
+            return API.topRated("movie", p);
+          },
+          "Highest rated movies of all time.",
+        );
       } else if (route.name === "series") {
-        UI.openGrid("series", "TV Shows", "tv", function (p) { return API.popular("tv", p); }, "Browse popular TV shows and series.");
+        UI.openGrid(
+          "series",
+          "TV Shows",
+          "tv",
+          function (p) {
+            return API.popular("tv", p);
+          },
+          "Browse popular TV shows and series.",
+        );
       } else if (route.name === "series-trending") {
-        UI.openGrid("series-trending", "Trending TV Shows", "tv", function (p) { return API.trending("tv", p); }, "Trending TV shows this week.");
+        UI.openGrid(
+          "series-trending",
+          "Trending TV Shows",
+          "tv",
+          function (p) {
+            return API.trending("tv", p);
+          },
+          "Trending TV shows this week.",
+        );
       } else if (route.name === "series-top-rated") {
-        UI.openGrid("series-top-rated", "Top Rated TV Shows", "tv", function (p) { return API.topRated("tv", p); }, "Highest rated TV shows of all time.");
+        UI.openGrid(
+          "series-top-rated",
+          "Top Rated TV Shows",
+          "tv",
+          function (p) {
+            return API.topRated("tv", p);
+          },
+          "Highest rated TV shows of all time.",
+        );
       } else if (route.name === "watchlist") {
         UI.renderWatchlist();
       } else if (route.name === "history") {
@@ -129,7 +198,8 @@
 
   document.addEventListener("click", function (ev) {
     if (!mobileNav.classList.contains("is-open")) return;
-    if (!mobileNav.contains(ev.target) && !hamburger.contains(ev.target)) setMenu(false);
+    if (!mobileNav.contains(ev.target) && !hamburger.contains(ev.target))
+      setMenu(false);
   });
 
   document.addEventListener("keydown", function (ev) {

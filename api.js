@@ -14,7 +14,8 @@ var API = (function () {
   }
 
   function poster(p, size) {
-    if (!p) return "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+    if (!p)
+      return "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
     return CONFIG.imageBase + "/" + (size || CONFIG.posterWidth) + p;
   }
 
@@ -42,9 +43,12 @@ var API = (function () {
   }
 
   function genreNames(ids, map) {
-    return (ids || []).map(function (id) {
-      return map[id];
-    }).filter(Boolean).slice(0, 5);
+    return (ids || [])
+      .map(function (id) {
+        return map[id];
+      })
+      .filter(Boolean)
+      .slice(0, 5);
   }
 
   function genres(mediaType) {
@@ -69,12 +73,14 @@ var API = (function () {
 
   function details(mediaType, id) {
     return fetchJson("/" + mediaType + "/" + id, {
-      append_to_response: "videos,credits"
+      append_to_response: "videos,credits",
     });
   }
 
   function similar(mediaType, id, page) {
-    return fetchJson("/" + mediaType + "/" + id + "/similar", { page: page || 1 });
+    return fetchJson("/" + mediaType + "/" + id + "/similar", {
+      page: page || 1,
+    });
   }
 
   function collection(id, page) {
@@ -101,6 +107,6 @@ var API = (function () {
     details: details,
     similar: similar,
     collection: collection,
-    seasonEpisodes: seasonEpisodes
+    seasonEpisodes: seasonEpisodes,
   };
 })();

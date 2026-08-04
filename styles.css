@@ -131,7 +131,12 @@ input {
   position: absolute;
   inset: 0;
   transform: translateX(-100%);
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.06), transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.06),
+    transparent
+  );
   animation: shimmer 1.4s infinite;
 }
 
@@ -161,12 +166,12 @@ input {
 }
 
 .w70 {
-    width: 70%;
-  }
+  width: 70%;
+}
 
-  .skeleton-wrap {
-    display: contents;
-  }
+.skeleton-wrap {
+  display: contents;
+}
 
 .btn {
   display: inline-flex;
@@ -986,7 +991,11 @@ input {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(15, 21, 33, 0.2), rgba(15, 21, 33, 0.92) 88%);
+  background: linear-gradient(
+    180deg,
+    rgba(15, 21, 33, 0.2),
+    rgba(15, 21, 33, 0.92) 88%
+  );
   pointer-events: none;
 }
 
