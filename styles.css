@@ -1088,8 +1088,12 @@ input {
   gap: 14px;
   overflow-x: auto;
   overscroll-behavior-x: contain;
-  scrollbar-width: thin;
+  scrollbar-width: none;
   padding-bottom: 10px;
+}
+
+.cast-row::-webkit-scrollbar {
+  display: none;
 }
 
 .cast-card {
