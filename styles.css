@@ -161,8 +161,12 @@ input {
 }
 
 .w70 {
-  width: 70%;
-}
+    width: 70%;
+  }
+
+  .skeleton-wrap {
+    display: contents;
+  }
 
 .btn {
   display: inline-flex;
@@ -1569,12 +1573,16 @@ input {
     width: auto;
   }
 
+  .skeleton-wrap {
+    display: contents;
+  }
+
   .row-track {
     gap: 8px;
     padding-bottom: 4px;
   }
 
-  .card {
+  .row-track .card {
     width: calc((100vw - 32px - 16px) / 3);
     max-width: 112px;
   }

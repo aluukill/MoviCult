@@ -175,9 +175,10 @@ var UI = (function () {
   }
 
   function skeletons(n) {
-    var frag = document.createDocumentFragment();
-    for (var i = 0; i < n; i++) frag.appendChild(skeletonCard());
-    return frag;
+    var wrap = document.createElement("div");
+    wrap.className = "skeleton-wrap";
+    for (var i = 0; i < n; i++) wrap.appendChild(skeletonCard());
+    return wrap;
   }
 
   function episodeSkeleton() {
