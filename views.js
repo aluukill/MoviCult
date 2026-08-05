@@ -15,6 +15,7 @@ var UI = (function () {
   var watchMetaBase = "";
   var ldEl = null;
   var closeSearchFn = null;
+  var activeHero = null;
   var BACK =
     '<button class="btn btn-ghost back-btn" id="backBtn"><i class="fas fa-chevron-left"></i> Back</button>';
 
@@ -157,6 +158,12 @@ var UI = (function () {
       },
       { passive: true },
     );
+
+    document.addEventListener("visibilitychange", function () {
+      if (!activeHero) return;
+      if (document.hidden) activeHero.pause();
+      else if (activeHero.heroEl.isConnected) activeHero.resume();
+    });
   }
 
   function setPageTitle(title) {
@@ -287,11 +294,19 @@ var UI = (function () {
     return el;
   }
 
-  function heroSlideshow(items, container) {
+  function heroSlideshow(items, container, opts) {
     var current = 0;
     var slides = [];
     var dots = [];
     var heroEl = null;
+    var timer = null;
+    var remaining = 0;
+    var TICK_MS = 50;
+    var interval = Math.max(
+      TICK_MS,
+      opts && opts.interval > 0 ? opts.interval : 6000,
+    );
+    var autoplay = !opts || opts.autoplay !== false;
 
     container.innerHTML =
       '<div class="hero">' +
@@ -299,11 +314,13 @@ var UI = (function () {
       '<button class="hero-arrow prev" aria-label="Previous slide"><i class="fas fa-chevron-left"></i></button>' +
       '<button class="hero-arrow next" aria-label="Next slide"><i class="fas fa-chevron-right"></i></button>' +
       '<div class="hero-dots"></div>' +
+      '<div class="hero-progress" aria-hidden="true"></div>' +
       "</div>";
 
     heroEl = container.querySelector(".hero");
     var slidesEl = container.querySelector(".hero-slides");
     var dotsEl = container.querySelector(".hero-dots");
+    var progressEl = container.querySelector(".hero-progress");
     var prevBtn = container.querySelector(".prev");
     var nextBtn = container.querySelector(".next");
 
@@ -354,6 +371,7 @@ var UI = (function () {
       dot.setAttribute("aria-label", "Go to slide " + (i + 1));
       dot.addEventListener("click", function () {
         go(i);
+        restart();
       });
       dots.push(dot);
       dotsEl.appendChild(dot);
@@ -373,9 +391,11 @@ var UI = (function () {
 
     prevBtn.addEventListener("click", function () {
       go(current - 1);
+      restart();
     });
     nextBtn.addEventListener("click", function () {
       go(current + 1);
+      restart();
     });
 
     var touchX = null;
@@ -394,13 +414,68 @@ var UI = (function () {
         touchX = null;
         if (Math.abs(dx) > 48) {
           go(current + (dx < 0 ? 1 : -1));
+          restart();
         }
       },
       { passive: true },
     );
 
+    function updateProgress() {
+      if (!progressEl) return;
+      progressEl.style.transform =
+        "scaleX(" + Math.max(0, Math.min(1, remaining / interval)) + ")";
+    }
+
+    function pause() {
+      if (timer) {
+        clearInterval(timer);
+        timer = null;
+      }
+    }
+
+    function resume() {
+      if (!autoplay || timer || items.length < 2 || !heroEl.isConnected)
+        return;
+      heroEl.classList.add("is-playing");
+      timer = setInterval(function () {
+        if (!heroEl.isConnected) {
+          pause();
+          return;
+        }
+        remaining -= TICK_MS;
+        if (remaining <= 0) {
+          go(current + 1);
+          remaining = interval;
+        }
+        updateProgress();
+      }, TICK_MS);
+    }
+
+    function restart() {
+      if (!autoplay) return;
+      remaining = interval;
+      updateProgress();
+      resume();
+    }
+
+    if (window.matchMedia("(hover: hover)").matches) {
+      heroEl.addEventListener("mouseenter", pause);
+      heroEl.addEventListener("mouseleave", resume);
+    }
+    heroEl.addEventListener("focusin", pause);
+    heroEl.addEventListener("focusout", resume);
+
+    activeHero = { heroEl: heroEl, pause: pause, resume: resume };
+
+    if (autoplay && !document.hidden) restart();
+
     return {
       destroy: function () {
+        if (activeHero && activeHero.heroEl === heroEl) activeHero = null;
+        if (timer) {
+          clearInterval(timer);
+          timer = null;
+        }
         container.innerHTML = "";
       },
     };
