@@ -99,9 +99,7 @@
     if (key && cache[key]) {
       UI.restoreView(cache[key]);
       var saved = scrollPositions[location.hash] || 0;
-      requestAnimationFrame(function () {
-        window.scrollTo(0, saved);
-      });
+      window.scrollTo(0, saved);
     } else {
       if (route.name === "home") {
         UI.renderHome();

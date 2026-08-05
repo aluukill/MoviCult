@@ -17,7 +17,6 @@ var UI = (function () {
   var closeSearchFn = null;
   var BACK =
     '<button class="btn btn-ghost back-btn" id="backBtn"><i class="fas fa-chevron-left"></i> Back</button>';
-  var SLIDE_INTERVAL = 5000;
 
   var STORAGE_KEYS = {
     watchlist: "movicult_watchlist",
@@ -290,10 +289,8 @@ var UI = (function () {
 
   function heroSlideshow(items, container) {
     var current = 0;
-    var timerId = null;
     var slides = [];
     var dots = [];
-    var progressEl = null;
     var heroEl = null;
 
     container.innerHTML =
@@ -302,7 +299,6 @@ var UI = (function () {
       '<button class="hero-arrow prev" aria-label="Previous slide"><i class="fas fa-chevron-left"></i></button>' +
       '<button class="hero-arrow next" aria-label="Next slide"><i class="fas fa-chevron-right"></i></button>' +
       '<div class="hero-dots"></div>' +
-      '<div class="hero-progress"></div>' +
       "</div>";
 
     heroEl = container.querySelector(".hero");
@@ -310,7 +306,6 @@ var UI = (function () {
     var dotsEl = container.querySelector(".hero-dots");
     var prevBtn = container.querySelector(".prev");
     var nextBtn = container.querySelector(".next");
-    progressEl = container.querySelector(".hero-progress");
 
     items.forEach(function (item, i) {
       var slide = document.createElement("div");
@@ -359,7 +354,6 @@ var UI = (function () {
       dot.setAttribute("aria-label", "Go to slide " + (i + 1));
       dot.addEventListener("click", function () {
         go(i);
-        start();
       });
       dots.push(dot);
       dotsEl.appendChild(dot);
@@ -377,45 +371,11 @@ var UI = (function () {
       });
     }
 
-    function advance() {
-      go(current + 1);
-      startProgress();
-    }
-
-    function startProgress() {
-      if (!progressEl) return;
-      progressEl.classList.remove("is-running");
-      void progressEl.offsetWidth;
-      progressEl.classList.add("is-running");
-    }
-
-    function start() {
-      stop();
-      startProgress();
-      timerId = setInterval(advance, SLIDE_INTERVAL);
-    }
-
-    function stop() {
-      if (timerId) {
-        clearInterval(timerId);
-        timerId = null;
-      }
-      if (progressEl) progressEl.classList.remove("is-running");
-    }
-
     prevBtn.addEventListener("click", function () {
       go(current - 1);
-      start();
     });
     nextBtn.addEventListener("click", function () {
       go(current + 1);
-      start();
-    });
-    heroEl.addEventListener("mouseenter", stop);
-    heroEl.addEventListener("mouseleave", start);
-    heroEl.addEventListener("focusin", stop);
-    heroEl.addEventListener("focusout", function () {
-      if (!heroEl.contains(document.activeElement)) start();
     });
 
     var touchX = null;
@@ -434,17 +394,13 @@ var UI = (function () {
         touchX = null;
         if (Math.abs(dx) > 48) {
           go(current + (dx < 0 ? 1 : -1));
-          start();
         }
       },
       { passive: true },
     );
 
-    start();
-
     return {
       destroy: function () {
-        stop();
         container.innerHTML = "";
       },
     };
@@ -1069,7 +1025,7 @@ var UI = (function () {
         if (trailerBtn) {
           trailerBtn.addEventListener("click", function () {
             var tb = document.getElementById("trailerSection");
-            if (tb) tb.scrollIntoView({ behavior: "smooth", block: "center" });
+            if (tb) tb.scrollIntoView({ block: "center" });
           });
         }
 
@@ -1287,7 +1243,7 @@ var UI = (function () {
       '<h1 class="watch-title" id="watchTitle">Loading...</h1>' +
       '<div class="watch-meta" id="watchMeta"></div>' +
       '<div class="player" id="player">' +
-      '<div class="player-frame-wrap"><div class="player-spinner"><i class="fas fa-spinner fa-spin"></i><span>Loading video...</span></div></div>' +
+      '<div class="player-frame-wrap"><div class="player-spinner"><i class="fas fa-spinner"></i><span>Loading video...</span></div></div>' +
       "</div>" +
       '<div class="status-line" id="statusLine"><i class="fas fa-circle-info"></i><span id="statusText">Loading video...</span></div>' +
       '<section class="servers" id="serversSection"></section>' +
@@ -1772,7 +1728,7 @@ var UI = (function () {
       debounce = setTimeout(function () {
         openPanel();
         panel.innerHTML =
-          '<div class="panel-note"><i class="fas fa-spinner fa-spin"></i><span>Searching...</span></div>';
+          '<div class="panel-note"><i class="fas fa-spinner"></i><span>Searching...</span></div>';
         API.searchMulti(q, 1)
           .then(function (data) {
             renderSuggestions(data, q);

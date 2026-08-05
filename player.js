@@ -54,7 +54,7 @@ var Player = (function () {
     el.innerHTML =
       '<div class="player-frame-wrap">' +
       '<iframe class="player-frame" id="playerFrame" allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowfullscreen title="Video player" referrerpolicy="origin"></iframe>' +
-      '<div class="player-spinner"><i class="fas fa-spinner fa-spin"></i><span>Loading video...</span></div>' +
+      '<div class="player-spinner"><i class="fas fa-spinner"></i><span>Loading video...</span></div>' +
       "</div>";
     frame = el.querySelector("#playerFrame");
     wrap = el.querySelector(".player-frame-wrap");
