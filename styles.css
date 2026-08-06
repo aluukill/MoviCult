@@ -676,6 +676,26 @@ input[type="search"]::-webkit-search-cancel-button {
   background: var(--accent);
 }
 
+.hero-toggle {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  z-index: 3;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(35, 45, 61, 0.85);
+  border: 1px solid var(--border);
+  color: var(--text);
+  display: grid;
+  place-items: center;
+  font-size: 0.9rem;
+}
+
+.hero-toggle:hover {
+  background: var(--border);
+}
+
 .hero-progress {
   position: absolute;
   bottom: 0;
@@ -1126,6 +1146,19 @@ input[type="search"]::-webkit-search-cancel-button {
   align-items: flex-start;
 }
 
+.watch-layout.is-solo {
+  justify-content: center;
+}
+
+.watch-layout.is-solo .watch-player-col {
+  flex: 0 1 880px;
+  width: 100%;
+}
+
+.watch-layout.is-solo .watch-episodes-col {
+  display: none;
+}
+
 .watch-player-col {
   flex: 1;
   min-width: 0;
@@ -1295,85 +1328,6 @@ input[type="search"]::-webkit-search-cancel-button {
   font-weight: 600;
 }
 
-.dropdown {
-  position: relative;
-  display: inline-flex;
-}
-
-.dropdown-trigger {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  min-width: 170px;
-  padding: 10px 14px;
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
-  background: var(--surface-2);
-  color: var(--text);
-  font-size: 0.9rem;
-  font-weight: 600;
-}
-
-.dropdown-trigger:hover,
-.dropdown-trigger.is-open {
-  border-color: var(--accent);
-}
-
-.dropdown-trigger i {
-  font-size: 0.72rem;
-  color: var(--muted);
-}
-
-.dropdown-menu {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  min-width: 100%;
-  max-height: 280px;
-  overflow-y: auto;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-md);
-  z-index: 30;
-  opacity: 0;
-  visibility: hidden;
-}
-
-.dropdown-menu.is-open {
-  opacity: 1;
-  visibility: visible;
-}
-
-.dropdown-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  width: 100%;
-  padding: 10px 14px;
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: var(--text);
-  text-align: left;
-}
-
-.dropdown-item:hover,
-.dropdown-item.is-active {
-  background: var(--border);
-}
-
-.dropdown-item .check {
-  color: var(--accent);
-  font-size: 0.8rem;
-  opacity: 0;
-}
-
-.dropdown-item.is-active .check {
-  opacity: 1;
-}
-
 .episode-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -1383,9 +1337,9 @@ input[type="search"]::-webkit-search-cancel-button {
 
 .episodes-header {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
   margin-bottom: 12px;
   padding: 12px 14px;
   background: var(--surface);
@@ -1398,6 +1352,41 @@ input[type="search"]::-webkit-search-cancel-button {
   font-weight: 600;
 }
 
+.season-chips {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+
+.season-chips::-webkit-scrollbar {
+  display: none;
+}
+
+.season-chip {
+  flex: 0 0 auto;
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.season-chip:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+
+.season-chip.is-active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+
 .episode-list-wrap {
   display: flex;
   flex-direction: column;
@@ -1407,22 +1396,35 @@ input[type="search"]::-webkit-search-cancel-button {
 .episode-list-wrap .episode-card {
   display: flex;
   flex-direction: row;
+  align-items: flex-start;
+  gap: 10px;
   border-radius: var(--radius-sm);
 }
 
 .episode-list-wrap .episode-thumb-wrap {
-  width: 140px;
-  flex: 0 0 140px;
+  flex: 0 0 120px;
+  width: 120px;
   aspect-ratio: 16 / 9;
 }
 
 .episode-list-wrap .episode-body {
   flex: 1;
   min-width: 0;
-  padding: 8px 10px;
+  padding: 2px 0;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  gap: 4px;
+}
+
+.episode-list-wrap .episode-name {
+  font-size: 0.92rem;
+  font-weight: 600;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  white-space: normal;
 }
 
 .episode-list-wrap .episode-overview {
@@ -1430,6 +1432,7 @@ input[type="search"]::-webkit-search-cancel-button {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  margin-top: 0;
 }
 
 .episode-card {
@@ -1602,20 +1605,29 @@ input[type="search"]::-webkit-search-cancel-button {
     flex-direction: column;
   }
 
+  .watch-layout.is-solo .watch-player-col {
+    flex: 1 1 auto;
+    width: 100%;
+  }
+
   .watch-episodes-col {
     width: 100%;
     flex: none;
     max-height: none;
     position: static;
+    overflow: visible;
+  }
+
+  /* Keep the season selector pinned while the episode list scrolls */
+  .watch-episodes-col .episodes-header {
+    position: sticky;
+    top: var(--site-header-h, 122px);
+    z-index: 5;
   }
 
   .episode-list-wrap .episode-thumb-wrap {
-    width: 120px;
-    flex: 0 0 120px;
-  }
-
-  .dropdown-trigger {
-    min-width: 140px;
+    flex: 0 0 100px;
+    width: 100px;
   }
 }
 
