@@ -1,2 +1,31 @@
-.agents
-.freebuff
+# Workspace tooling (AI agent state, preview logs, local DBs)
+.agents/
+.freebuff/
+
+# Dependencies
+node_modules/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS junk
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Editors / IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Ad-hoc scratch harnesses (headless verification scripts)
+_verify*.js
+_probe*.js
+_dbg*.js
