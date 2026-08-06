@@ -15,7 +15,6 @@ var UI = (function () {
   var watchMetaBase = "";
   var ldEl = null;
   var closeSearchFn = null;
-  var activeHero = null;
   var BACK =
     '<button class="btn btn-ghost back-btn" id="backBtn"><i class="fas fa-chevron-left"></i> Back</button>';
 
@@ -159,11 +158,6 @@ var UI = (function () {
       { passive: true },
     );
 
-    document.addEventListener("visibilitychange", function () {
-      if (!activeHero) return;
-      if (document.hidden) activeHero.pause();
-      else if (activeHero.heroEl.isConnected) activeHero.resume();
-    });
   }
 
   function setPageTitle(title) {
@@ -300,13 +294,7 @@ var UI = (function () {
     var dots = [];
     var heroEl = null;
     var timer = null;
-    var remaining = 0;
-    var TICK_MS = 50;
-    var interval = Math.max(
-      TICK_MS,
-      opts && opts.interval > 0 ? opts.interval : 6000,
-    );
-    var autoplay = !opts || opts.autoplay !== false;
+    var interval = opts && opts.interval > 0 ? opts.interval : 6000;
 
     container.innerHTML =
       '<div class="hero">' +
@@ -314,13 +302,11 @@ var UI = (function () {
       '<button class="hero-arrow prev" aria-label="Previous slide"><i class="fas fa-chevron-left"></i></button>' +
       '<button class="hero-arrow next" aria-label="Next slide"><i class="fas fa-chevron-right"></i></button>' +
       '<div class="hero-dots"></div>' +
-      '<div class="hero-progress" aria-hidden="true"></div>' +
       "</div>";
 
     heroEl = container.querySelector(".hero");
     var slidesEl = container.querySelector(".hero-slides");
     var dotsEl = container.querySelector(".hero-dots");
-    var progressEl = container.querySelector(".hero-progress");
     var prevBtn = container.querySelector(".prev");
     var nextBtn = container.querySelector(".next");
 
@@ -420,41 +406,26 @@ var UI = (function () {
       { passive: true },
     );
 
-    function updateProgress() {
-      if (!progressEl) return;
-      progressEl.style.transform =
-        "scaleX(" + Math.max(0, Math.min(1, remaining / interval)) + ")";
+    function advance() {
+      if (!heroEl.isConnected) {
+        pause();
+        return;
+      }
+      go(current + 1);
     }
 
     function pause() {
-      if (timer) {
-        clearInterval(timer);
-        timer = null;
-      }
+      clearInterval(timer);
+      timer = null;
     }
 
     function resume() {
-      if (!autoplay || timer || items.length < 2 || !heroEl.isConnected)
-        return;
-      heroEl.classList.add("is-playing");
-      timer = setInterval(function () {
-        if (!heroEl.isConnected) {
-          pause();
-          return;
-        }
-        remaining -= TICK_MS;
-        if (remaining <= 0) {
-          go(current + 1);
-          remaining = interval;
-        }
-        updateProgress();
-      }, TICK_MS);
+      if (items.length < 2 || timer) return;
+      timer = setInterval(advance, interval);
     }
 
     function restart() {
-      if (!autoplay) return;
-      remaining = interval;
-      updateProgress();
+      pause();
       resume();
     }
 
@@ -465,17 +436,11 @@ var UI = (function () {
     heroEl.addEventListener("focusin", pause);
     heroEl.addEventListener("focusout", resume);
 
-    activeHero = { heroEl: heroEl, pause: pause, resume: resume };
-
-    if (autoplay && !document.hidden) restart();
+    if (items.length > 1) resume();
 
     return {
       destroy: function () {
-        if (activeHero && activeHero.heroEl === heroEl) activeHero = null;
-        if (timer) {
-          clearInterval(timer);
-          timer = null;
-        }
+        pause();
         container.innerHTML = "";
       },
     };
