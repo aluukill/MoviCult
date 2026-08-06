@@ -13,6 +13,8 @@ var UI = (function () {
   var genreCache = {};
   var watchState = { s: 1, e: 1 };
   var watchMetaBase = "";
+  var watchTitle = "";
+  var watchPoster = "";
   var ldEl = null;
   var closeSearchFn = null;
   var BACK =
@@ -136,6 +138,18 @@ var UI = (function () {
       { rootMargin: "600px" },
     );
     sentinelObserver.observe(sentinel);
+
+    function syncSiteHeaderH() {
+      var h = document.querySelector(".site-header");
+      if (h) {
+        document.documentElement.style.setProperty(
+          "--site-header-h",
+          h.getBoundingClientRect().height + "px",
+        );
+      }
+    }
+    syncSiteHeaderH();
+    window.addEventListener("resize", syncSiteHeaderH);
 
     window.addEventListener(
       "scroll",
@@ -295,13 +309,19 @@ var UI = (function () {
     var heroEl = null;
     var timer = null;
     var interval = opts && opts.interval > 0 ? opts.interval : 6000;
+    var reduceMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    var userPlayed = false;
+    var explicitPause = false;
 
     container.innerHTML =
-      '<div class="hero">' +
-      '<div class="hero-slides"></div>' +
+      '<div class="hero" role="region" aria-roledescription="carousel" aria-label="Trending slides">' +
+      '<div class="hero-slides" aria-live="off"></div>' +
       '<button class="hero-arrow prev" aria-label="Previous slide"><i class="fas fa-chevron-left"></i></button>' +
       '<button class="hero-arrow next" aria-label="Next slide"><i class="fas fa-chevron-right"></i></button>' +
       '<div class="hero-dots"></div>' +
+      '<button class="hero-toggle" type="button" aria-pressed="false" aria-label="Pause slideshow"><i class="fas fa-pause" aria-hidden="true"></i></button>' +
       "</div>";
 
     heroEl = container.querySelector(".hero");
@@ -309,10 +329,14 @@ var UI = (function () {
     var dotsEl = container.querySelector(".hero-dots");
     var prevBtn = container.querySelector(".prev");
     var nextBtn = container.querySelector(".next");
+    var toggleBtn = container.querySelector(".hero-toggle");
 
     items.forEach(function (item, i) {
       var slide = document.createElement("div");
       slide.className = "hero-slide" + (i === 0 ? " is-active" : "");
+      slide.setAttribute("role", "group");
+      slide.setAttribute("aria-roledescription", "slide");
+      slide.setAttribute("aria-label", i + 1 + " of " + items.length);
       var type = mediaTypeOf(item);
       slide.innerHTML =
         '<img class="hero-bg" data-src="' +
@@ -414,14 +438,32 @@ var UI = (function () {
       go(current + 1);
     }
 
+    function syncToggle() {
+      var paused = !timer;
+      toggleBtn.setAttribute("aria-pressed", paused ? "true" : "false");
+      toggleBtn.setAttribute(
+        "aria-label",
+        paused ? "Play slideshow" : "Pause slideshow",
+      );
+      toggleBtn.querySelector("i").className = paused
+        ? "fas fa-play"
+        : "fas fa-pause";
+    }
+
     function pause() {
       clearInterval(timer);
       timer = null;
+      syncToggle();
     }
 
     function resume() {
       if (items.length < 2 || timer) return;
+      // An explicit pause from the button sticks until the user plays again;
+      // hover/focus leaving must not silently restart it.
+      if (explicitPause) return;
+      if (reduceMotion && !userPlayed) return;
       timer = setInterval(advance, interval);
+      syncToggle();
     }
 
     function restart() {
@@ -429,14 +471,36 @@ var UI = (function () {
       resume();
     }
 
+    toggleBtn.addEventListener("click", function () {
+      if (timer) {
+        userPlayed = false;
+        explicitPause = true;
+        pause();
+      } else {
+        explicitPause = false;
+        userPlayed = true;
+        resume();
+      }
+    });
+
     if (window.matchMedia("(hover: hover)").matches) {
       heroEl.addEventListener("mouseenter", pause);
       heroEl.addEventListener("mouseleave", resume);
     }
-    heroEl.addEventListener("focusin", pause);
-    heroEl.addEventListener("focusout", resume);
+    // Focusing the pause/play control itself must not trigger the focus-pause
+    // (a real click/tab fires focusin on the hero before the button's click,
+    // which would flip the button's state and invert the pause action).
+    heroEl.addEventListener("focusin", function (ev) {
+      if (ev.target === toggleBtn) return;
+      pause();
+    });
+    heroEl.addEventListener("focusout", function (ev) {
+      if (ev.target === toggleBtn) return;
+      resume();
+    });
 
     if (items.length > 1) resume();
+    syncToggle();
 
     return {
       destroy: function () {
@@ -1315,6 +1379,8 @@ var UI = (function () {
           shortYear(data),
           type === "tv" ? "TV Show" : "Movie",
         ];
+        watchTitle = shortTitle(data);
+        watchPoster = data.poster_path;
         if (type === "tv") {
           watchMetaBase =
             "<span>" +
@@ -1334,7 +1400,10 @@ var UI = (function () {
             return m ? "<span>" + esc(m) + "</span>" : "";
           })
           .join("");
-        if (type === "tv") {
+        var watchLayout = viewRoot.querySelector(".watch-layout");
+        var solo = type === "movie" || data.number_of_episodes === 1;
+        if (watchLayout) watchLayout.classList.toggle("is-solo", solo);
+        if (type === "tv" && !solo) {
           var seasons = (data.seasons || []).filter(function (x) {
             return x.season_number > 0;
           });
@@ -1344,7 +1413,20 @@ var UI = (function () {
             })
               ? watchState.s
               : seasons[0].season_number;
-            watchState.s = wanted;
+            if (wanted !== watchState.s) {
+              // Season from the URL was invalid: keep the meta line in sync
+              // with the corrected season the chips now show.
+              watchState.s = wanted;
+              var metaEl = document.getElementById("watchMeta");
+              if (metaEl)
+                metaEl.innerHTML =
+                  watchMetaBase +
+                  "<span>Season " +
+                  wanted +
+                  " · Episode " +
+                  watchState.e +
+                  "</span>";
+            }
             buildEpisodesSection(type, id, seasons);
           } else {
             document.getElementById("episodesSection").innerHTML = "";
@@ -1375,25 +1457,56 @@ var UI = (function () {
 
   function buildEpisodesSection(type, id, seasons) {
     var sec = document.getElementById("episodesSection");
+    var chips = seasons
+      .map(function (x) {
+        var s = x.season_number;
+        var active = s === watchState.s;
+        return (
+          '<button type="button" class="season-chip' +
+          (active ? " is-active" : "") +
+          '" role="tab" aria-selected="' +
+          (active ? "true" : "false") +
+          '" data-season="' +
+          s +
+          '">S' +
+          s +
+          "</button>"
+        );
+      })
+      .join("");
     sec.innerHTML =
       '<div class="episodes-header" id="episodesHeader">' +
       '<span class="seasons-label">Episodes</span>' +
-      '<div id="seasonDropdown"></div>' +
+      '<div class="season-chips" role="tablist" aria-label="Seasons">' +
+      chips +
+      "</div>" +
       "</div>" +
       '<div class="episode-list-wrap" id="episodeGrid"></div>';
-    var dropdown = createDropdown({
-      label: "Season",
-      options: seasons.map(function (x) {
-        return { value: x.season_number, label: "Season " + x.season_number };
-      }),
-      value: watchState.s,
-      onSelect: function (val) {
-        watchState.s = val;
-        watchState.e = 1;
-        loadEpisodes(type, id, val);
+    Array.prototype.forEach.call(
+      sec.querySelectorAll(".season-chip"),
+      function (chip) {
+        chip.addEventListener("click", function () {
+          var s = parseInt(chip.dataset.season, 10);
+          if (s === watchState.s) return;
+          watchState.s = s;
+          watchState.e = 1;
+          Array.prototype.forEach.call(
+            sec.querySelectorAll(".season-chip"),
+            function (c) {
+              var on = c === chip;
+              c.classList.toggle("is-active", on);
+              c.setAttribute("aria-selected", on ? "true" : "false");
+            },
+          );
+          loadEpisodes(type, id, s);
+          var meta = document.getElementById("watchMeta");
+          if (meta) {
+            meta.innerHTML =
+              watchMetaBase + "<span>Season " + s + " · Episode 1</span>";
+          }
+        });
       },
-    });
-    document.getElementById("seasonDropdown").appendChild(dropdown.el);
+    );
     loadEpisodes(type, id, watchState.s);
   }
 
@@ -1403,7 +1516,7 @@ var UI = (function () {
     grid.innerHTML = "";
     for (var i = 0; i < 4; i++) grid.appendChild(episodeSkeleton());
     if (episodeCache[s]) {
-      renderEpisodes(s, episodeCache[s]);
+      renderEpisodes(type, id, s, episodeCache[s]);
       return;
     }
     API.seasonEpisodes(type, id, s)
@@ -1412,25 +1525,29 @@ var UI = (function () {
           return a.episode_number - b.episode_number;
         });
         episodeCache[s] = eps;
-        renderEpisodes(s, eps);
+        // Guard against a stale response: the user may have switched seasons
+        // while this fetch was in flight.
+        if (s === watchState.s) renderEpisodes(type, id, s, eps);
       })
       .catch(function () {
+        // Don't clobber the grid if the user has already switched seasons.
+        if (s !== watchState.s) return;
         grid.innerHTML = "";
         grid.appendChild(emptyState("Episodes could not be loaded."));
       });
   }
 
-  function renderEpisodes(s, eps) {
+  function renderEpisodes(type, id, s, eps) {
     var grid = document.getElementById("episodeGrid");
-    if (!grid) return;
+    if (!grid || s !== watchState.s) return;
     grid.innerHTML = "";
     eps.forEach(function (ep) {
-      grid.appendChild(episodeCard(s, ep));
+      grid.appendChild(episodeCard(type, id, s, ep));
     });
     registerLazy(grid);
   }
 
-  function episodeCard(s, ep) {
+  function episodeCard(type, id, s, ep) {
     var el = document.createElement("button");
     el.type = "button";
     el.className =
@@ -1475,14 +1592,7 @@ var UI = (function () {
         " · Episode " +
         ep.episode_number +
         "</span>";
-      addToHistory(
-        type,
-        id,
-        shortTitle(data),
-        data.poster_path,
-        s,
-        ep.episode_number,
-      );
+      addToHistory(type, id, watchTitle, watchPoster, s, ep.episode_number);
     });
     return el;
   }
@@ -1534,117 +1644,6 @@ var UI = (function () {
       list.appendChild(chip);
     });
     sec.appendChild(list);
-  }
-
-  function createDropdown(cfg) {
-    var el = document.createElement("div");
-    el.className = "dropdown";
-    el.innerHTML =
-      '<button type="button" class="dropdown-trigger" aria-haspopup="listbox" aria-expanded="false"><span></span><i class="fas fa-chevron-down" aria-hidden="true"></i></button>' +
-      '<div class="dropdown-menu" role="listbox" aria-label="' +
-      esc(cfg.label) +
-      '"></div>';
-    var trigger = el.querySelector(".dropdown-trigger");
-    var label = trigger.querySelector("span");
-    var menu = el.querySelector(".dropdown-menu");
-    var value = cfg.value;
-    var activeIndex = 0;
-    var items = [];
-
-    cfg.options.forEach(function (opt) {
-      var btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "dropdown-item";
-      btn.setAttribute("role", "option");
-      btn.innerHTML =
-        '<span></span><i class="fas fa-check check" aria-hidden="true"></i>';
-      btn.querySelector("span").textContent = opt.label;
-      btn.addEventListener("click", function () {
-        select(opt.value);
-      });
-      items.push({ el: btn, value: opt.value, label: opt.label });
-      menu.appendChild(btn);
-    });
-
-    function render() {
-      var cur = items.find(function (it) {
-        return it.value === value;
-      });
-      label.textContent = cur ? cur.label : "";
-      items.forEach(function (it) {
-        it.el.classList.toggle("is-active", it.value === value);
-      });
-    }
-
-    function select(v) {
-      value = v;
-      render();
-      close();
-      if (cfg.onSelect) cfg.onSelect(v);
-    }
-
-    function open() {
-      menu.classList.add("is-open");
-      trigger.classList.add("is-open");
-      trigger.setAttribute("aria-expanded", "true");
-      activeIndex = Math.max(
-        0,
-        items.findIndex(function (it) {
-          return it.value === value;
-        }),
-      );
-      items[activeIndex].el.focus();
-    }
-
-    function close() {
-      menu.classList.remove("is-open");
-      trigger.classList.remove("is-open");
-      trigger.setAttribute("aria-expanded", "false");
-    }
-
-    function move(d) {
-      activeIndex = (activeIndex + d + items.length) % items.length;
-      items[activeIndex].el.focus();
-    }
-
-    trigger.addEventListener("click", function () {
-      if (menu.classList.contains("is-open")) close();
-      else open();
-    });
-    trigger.addEventListener("keydown", function (ev) {
-      if (ev.key === "ArrowDown" || ev.key === "ArrowUp") {
-        ev.preventDefault();
-        if (!menu.classList.contains("is-open")) open();
-        move(ev.key === "ArrowDown" ? 1 : -1);
-      } else if (ev.key === "Escape") {
-        close();
-      }
-    });
-    menu.addEventListener("keydown", function (ev) {
-      if (ev.key === "ArrowDown" || ev.key === "ArrowUp") {
-        ev.preventDefault();
-        move(ev.key === "ArrowDown" ? 1 : -1);
-      } else if (ev.key === "Enter" || ev.key === " ") {
-        ev.preventDefault();
-        select(items[activeIndex].value);
-        trigger.focus();
-      } else if (ev.key === "Escape") {
-        ev.preventDefault();
-        close();
-        trigger.focus();
-      }
-    });
-    document.addEventListener("click", function (ev) {
-      if (!el.contains(ev.target)) close();
-    });
-
-    render();
-    return {
-      el: el,
-      get value() {
-        return value;
-      },
-    };
   }
 
   function initSearch() {
