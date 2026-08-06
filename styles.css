@@ -608,7 +608,7 @@ input[type="search"]::-webkit-search-cancel-button {
   font-size: 0.95rem;
   max-width: 560px;
   display: -webkit-box;
-  -webkit-line-clamp: 3;
+  line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -1399,6 +1399,7 @@ input[type="search"]::-webkit-search-cancel-button {
   align-items: flex-start;
   gap: 10px;
   border-radius: var(--radius-sm);
+  flex-shrink: 0;
 }
 
 .episode-list-wrap .episode-thumb-wrap {
@@ -1421,7 +1422,7 @@ input[type="search"]::-webkit-search-cancel-button {
   font-weight: 600;
   line-height: 1.35;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   white-space: normal;
@@ -1430,6 +1431,7 @@ input[type="search"]::-webkit-search-cancel-button {
 .episode-list-wrap .episode-overview {
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   margin-top: 0;
@@ -1501,7 +1503,7 @@ input[type="search"]::-webkit-search-cancel-button {
   font-size: 0.82rem;
   color: var(--muted);
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
